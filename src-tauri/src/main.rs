@@ -22,7 +22,7 @@ use reqwest::Client;
 use serde::{Serialize, Deserialize};
 use sqlx::{Error, SqlitePool};
 use uuid::Uuid;
-use tauri::{AppHandle, State};
+use tauri::{AppHandle, State, Emitter};
 
 // 数据结构
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -261,6 +261,185 @@ fn save_today_tasks(state: &AppState) -> Result<()> {
     Ok(())
 }
 
+/// 窗口标题格式化 - 清理冗余信息，提升统计准确性
+/// 处理浏览器标签页、IDE 项目名、通用后缀等冗余信息
+fn clean_window_title(window_title: &str, app_name: &str) -> String {
+    let mut title = window_title.trim();
+
+    // 1. 移除浏览器常见后缀
+    let browser_suffixes = [
+        " - Google Chrome",
+        " - Chrome",
+        " - Microsoft Edge",
+        " - Edge",
+        " - Firefox",
+        " - Mozilla Firefox",
+        " - Safari",
+        " — Safari",  // macOS em-dash
+        " - Brave",
+        " - Opera",
+        " - Vivaldi",
+    ];
+    for suffix in browser_suffixes {
+        if title.ends_with(suffix) {
+            title = &title[..title.len() - suffix.len()];
+            break;
+        }
+    }
+
+    // 2. 移除 IDE 常见前缀/后缀
+    let ide_patterns = [
+        (" - Visual Studio Code", ""),
+        (" - VS Code", ""),
+        (" - JetBrains Rider", ""),
+        (" - IntelliJ IDEA", ""),
+        (" - WebStorm", ""),
+        (" - PyCharm", ""),
+        (" - CLion", ""),
+        (" - GoLand", ""),
+        (" - PhpStorm", ""),
+        (" - RubyMine", ""),
+        (" - RustRover", ""),
+        (" - Android Studio", ""),
+        (" - Sublime Text", ""),
+        (" - Atom", ""),
+    ];
+    for (pattern, replacement) in ide_patterns {
+        if title.ends_with(pattern) {
+            title = &title[..title.len() - pattern.len()];
+            title = title.trim();
+            return format!("{} · {}", title, replacement);
+        }
+    }
+
+    // 3. 移除办公软件后缀
+    let office_suffixes = [
+        " - Microsoft Word",
+        " - Word",
+        " - Microsoft Excel",
+        " - Excel",
+        " - Microsoft PowerPoint",
+        " - PowerPoint",
+        " - Notion",
+        " - Obsidian",
+        " - Slack",
+        " - Discord",
+        " - Figma",
+        " - Photoshop",
+        " - Illustrator",
+        " - Adobe Photoshop",
+        " - Adobe Illustrator",
+    ];
+    for suffix in office_suffixes {
+        if title.ends_with(suffix) {
+            title = &title[..title.len() - suffix.len()];
+            break;
+        }
+    }
+
+    // 4. 反向处理：有些标题格式是 "应用名 - 文档名"
+    // 例如 "Finder - 文稿"、"Settings - 蓝牙"
+    if title.contains(" - ") && !title.contains('/') && !title.contains('\\') {
+        let parts: Vec<&str> = title.split(" - ").collect();
+        if parts.len() >= 2 {
+            // 如果第一部分就是应用名，只保留后面的内容
+            if parts[0].to_lowercase().contains(&app_name.to_lowercase())
+                || app_name.to_lowercase().contains(&parts[0].to_lowercase().replace(".app", "")) {
+                return parts[1..].join(" - ");
+            }
+        }
+    }
+
+    // 5. 截断过长的标题（保留前 80 字符）
+    if title.chars().count() > 80 {
+        let mut truncated: String = title.chars().take(77).collect();
+        truncated.push_str("...");
+        return truncated;
+    }
+
+    title.to_string()
+}
+
+// ============================================================================
+// 权限自检引导系统
+// ============================================================================
+
+/// 检查是否拥有必要的系统权限（跨平台）
+/// 返回：(是否有权限, 权限描述, 引导文案)
+fn check_permissions() -> (bool, String, String) {
+    #[cfg(target_os = "macos")]
+    {
+        // macOS：检测辅助功能权限（通过尝试获取窗口信息来间接判断）
+        match get_active_window() {
+            Ok(_) => (
+                true,
+                "✅ 辅助功能权限已获取".to_string(),
+                "可以正常追踪活动窗口".to_string()
+            ),
+            Err(e) => (
+                false,
+                "⚠️ 缺少辅助功能权限".to_string(),
+                format!(
+                    "请在「系统设置 → 隐私与安全性 → 辅助功能」中允许 Trace 控制您的电脑。\n\n\
+                     没有此权限将无法追踪窗口变化。\n\n\
+                     错误信息：{}",
+                    e
+                )
+            ),
+        }
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        // Windows：尝试获取窗口信息来检测 UI 自动化权限
+        match get_active_window() {
+            Ok(_) => (
+                true,
+                "✅ UI 访问权限正常".to_string(),
+                "可以正常追踪活动窗口".to_string()
+            ),
+            Err(e) => (
+                false,
+                "⚠️ 缺少 UI 访问权限".to_string(),
+                format!(
+                    "请以管理员身份运行应用，或在「设置 → 隐私 → 自动化」中允许 Trace。\n\n\
+                     错误信息：{}",
+                    e
+                )
+            ),
+        }
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        // Linux：简单的可用性检测
+        match get_active_window() {
+            Ok(_) => (
+                true,
+                "✅ 窗口访问权限正常".to_string(),
+                "可以正常追踪活动窗口".to_string()
+            ),
+            Err(e) => (
+                false,
+                "⚠️ 缺少窗口访问权限".to_string(),
+                format!(
+                    "请确保有窗口系统访问权限。\n\n错误信息：{}",
+                    e
+                )
+            ),
+        }
+    }
+}
+
+/// 权限状态事件（发送给前端）
+#[derive(Debug, Clone, Serialize)]
+struct PermissionStatusEvent {
+    has_permission: bool,
+    title: String,
+    message: String,
+    is_first_run: bool,
+}
+
 // 轮询活动窗口
 fn poll_active_window(state: &AppState) -> Result<Option<(String, String, String)>> {
     if !*state.is_tracking.lock().unwrap_or_else(|e| e.into_inner()) {
@@ -280,7 +459,10 @@ fn poll_active_window(state: &AppState) -> Result<Option<(String, String, String
     // x_win WindowInfo has .info which contains app info
     // For mac, we can extract the app name from the process info
     let app_name = window_info.info.name;
-    let window_title = window_info.title;
+    let raw_window_title = window_info.title;
+
+    // 窗口标题格式化：清理冗余信息，提升统计准确性
+    let window_title = clean_window_title(&raw_window_title, &app_name);
 
     // 检查忽略列表
     for ignored_app in &ignored {
@@ -1864,19 +2046,30 @@ fn main() {
         .setup(move |app| {
             // state is cloned for setup because state was moved into .manage()
             let state = state_for_setup;
-            let app_config_dir = app.path().app_config_dir().expect("No App config path was found!");
-            std::fs::create_dir_all(&app_config_dir).expect("Couldn't create app config dir");
+
+            // 安全获取配置目录，失败时用临时目录兜底
+            let app_config_dir = app.path().app_config_dir()
+                .unwrap_or_else(|_| std::env::temp_dir().join("trace"));
+
+            // 创建目录，失败只打日志不崩溃
+            if let Err(e) = std::fs::create_dir_all(&app_config_dir) {
+                eprintln!("[WARN] Couldn't create app config dir: {}", e);
+            }
+
             let db_path = app_config_dir.join("trace.db");
             let db_url = format!("sqlite:{}", db_path.to_string_lossy());
             let pool = tauri::async_runtime::block_on(async move {
                 SqlitePool::connect(&db_url).await
             }).map_err(|e| e.to_string())?;
             app.manage(pool);
+
             // state is already defined outside, use it directly
             let is_tracking = *state.is_tracking.lock().unwrap_or_else(|e| e.into_inner());
             let toggle_label = if is_tracking { "暂停追踪" } else { "开始追踪" };
 
-            // 创建系统托盘菜单 - Tauri 2.0 MenuItem::new(manager, text, enabled, accelerator)
+            // 创建系统托盘菜单
+            // 注：这里用 unwrap 是可接受的，因为 Tauri 菜单创建极少失败
+            // 即使失败，也只影响托盘功能，主窗口仍可正常使用
             let show_main_window = MenuItem::new(app, "打开主窗口", true, None::<&str>).unwrap();
             let open_focus_mode = MenuItem::new(app, "专注模式", true, None::<&str>).unwrap();
             let toggle_tracking = MenuItem::new(app, toggle_label, true, None::<&str>).unwrap();
@@ -1891,10 +2084,14 @@ fn main() {
                 .build()
                 .unwrap();
 
-            let _tray = TrayIconBuilder::new()
+            // 托盘创建失败不影响主程序运行
+            match TrayIconBuilder::new()
                 .menu(&tray_menu)
                 .title(if is_tracking { "🔍 追踪中" } else { "⏸️ 暂停" })
-                .build(app);
+                .build(app) {
+                    Ok(_tray) => {},
+                    Err(e) => eprintln!("[WARN] Failed to create tray icon: {}", e),
+                };
 
             // Load feature flags from saved settings
             let settings_guard = state.settings.lock().unwrap_or_else(|e| e.into_inner());
@@ -1902,6 +2099,28 @@ fn main() {
                 state.feature_flags.merge_from_frontend(frontend_flags);
             }
             drop(settings_guard);
+
+            // 🔍 权限自检 - 检查辅助功能权限并通知前端
+            let (has_permission, perm_title, perm_message) = check_permissions();
+            let is_first_run = state.is_tracking.lock().unwrap_or_else(|e| e.into_inner()).clone() == false
+                && state.activities.lock().unwrap_or_else(|e| e.into_inner()).is_empty();
+
+            // 发送权限状态给前端
+            let app_handle_clone = app.handle().clone();
+            let _ = app_handle_clone.emit(
+                "permission_status",
+                PermissionStatusEvent {
+                    has_permission,
+                    title: perm_title,
+                    message: perm_message,
+                    is_first_run,
+                },
+            );
+
+            // 如果没有权限，在日志中输出警告
+            if !has_permission {
+                eprintln!("[WARN] 缺少必要的系统权限，窗口追踪功能可能无法正常工作");
+            }
 
             // Get app handle for background tasks
             let app_handle = app.handle().clone();

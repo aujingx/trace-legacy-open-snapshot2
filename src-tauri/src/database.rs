@@ -225,6 +225,85 @@ CREATE TABLE IF NOT EXISTS daily_reviews (
 INSERT OR IGNORE INTO guardian_settings (id, user_id) VALUES (1, 1);
 "###,
             },
+            Migration {
+                version: 4,
+                description: "Add database indexes for performance optimization",
+                kind: tauri_plugin_sql::MigrationKind::Up,
+                sql: r###"
+-- Activities table indexes (most frequently queried)
+CREATE INDEX IF NOT EXISTS idx_activities_start_time ON activities(start_time_ms);
+CREATE INDEX IF NOT EXISTS idx_activities_name ON activities(name);
+CREATE INDEX IF NOT EXISTS idx_activities_category ON activities(category);
+CREATE INDEX IF NOT EXISTS idx_activities_created_at ON activities(created_at);
+
+-- Time blocks table indexes
+CREATE INDEX IF NOT EXISTS idx_time_blocks_start_time ON time_blocks(start_time);
+CREATE INDEX IF NOT EXISTS idx_time_blocks_date ON time_blocks(date);
+CREATE INDEX IF NOT EXISTS idx_time_blocks_task_id ON time_blocks(task_id);
+
+-- Focus sessions table indexes
+CREATE INDEX IF NOT EXISTS idx_focus_sessions_start_time ON focus_sessions(start_time);
+CREATE INDEX IF NOT EXISTS idx_focus_sessions_completed ON focus_sessions(completed);
+
+-- Tasks table indexes
+CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
+CREATE INDEX IF NOT EXISTS idx_tasks_priority ON tasks(priority);
+CREATE INDEX IF NOT EXISTS idx_tasks_due_date ON tasks(due_date);
+
+-- Habit checkins indexes
+CREATE INDEX IF NOT EXISTS idx_habit_checkins_checkin_date ON habit_checkins(checkin_date);
+CREATE INDEX IF NOT EXISTS idx_habit_checkins_habit_id ON habit_checkins(habit_id);
+
+-- Classification overrides indexes
+CREATE INDEX IF NOT EXISTS idx_classification_overrides_app_name ON classification_overrides(app_name);
+"###,
+            },
+            Migration {
+                version: 5,
+                description: "Add Project management for AI task generation",
+                kind: tauri_plugin_sql::MigrationKind::Up,
+                sql: r###"
+-- Projects table - for AI-generated project management
+CREATE TABLE IF NOT EXISTS projects (
+    id TEXT PRIMARY KEY,
+    user_id INTEGER DEFAULT 1,
+    name TEXT NOT NULL,                    -- 项目名称
+    description TEXT,                      -- 项目描述（AI 生成）
+    goal TEXT,                             -- 项目目标（AI 解析用户意图）
+    color TEXT DEFAULT "#3B82F6",         -- 项目颜色
+    icon TEXT DEFAULT "📁",               -- 项目图标
+    status TEXT DEFAULT "active",         -- active / completed / archived
+    priority INTEGER DEFAULT 3,           -- 项目优先级
+    estimated_total_minutes INTEGER DEFAULT 0,  -- 预估总工时
+    actual_minutes REAL DEFAULT 0,        -- 实际已用时
+    deadline TEXT,                        -- 截止日期
+    ai_generated INTEGER DEFAULT 0,       -- 是否 AI 创建
+    ai_prompt TEXT,                       -- 生成此项目的原始用户 prompt
+    parent_project_id TEXT,               -- 父项目 ID（支持子项目）
+    sort_order INTEGER DEFAULT 0,         -- 排序
+    completed_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (parent_project_id) REFERENCES projects(id)
+);
+
+-- Add project_id column to tasks table (for project-task association)
+ALTER TABLE tasks ADD COLUMN project_id TEXT REFERENCES projects(id);
+ALTER TABLE tasks ADD COLUMN parent_task_id TEXT REFERENCES tasks(id);  -- 子任务支持
+ALTER TABLE tasks ADD COLUMN sort_order INTEGER DEFAULT 0;             -- 任务排序
+ALTER TABLE tasks ADD COLUMN ai_suggested INTEGER DEFAULT 0;           -- 是否 AI 建议创建
+
+-- Projects indexes
+CREATE INDEX IF NOT EXISTS idx_projects_status ON projects(status);
+CREATE INDEX IF NOT EXISTS idx_projects_priority ON projects(priority);
+CREATE INDEX IF NOT EXISTS idx_projects_deadline ON projects(deadline);
+CREATE INDEX IF NOT EXISTS idx_projects_parent ON projects(parent_project_id);
+
+-- Tasks indexes for project association
+CREATE INDEX IF NOT EXISTS idx_tasks_project_id ON tasks(project_id);
+CREATE INDEX IF NOT EXISTS idx_tasks_parent_task_id ON tasks(parent_task_id);
+"###,
+            },
         ]
     }
 

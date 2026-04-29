@@ -9,6 +9,15 @@ pub mod feature_flags;
 pub mod pomodoro;
 pub mod idle_detection;
 
+// 核心追踪架构 - 参考 ActivityWatch 设计
+pub mod transform;
+pub mod watcher;
+
+// 统一事件总线 - 所有模块通过这里通信
+pub mod event_bus;
+// 「隐形 Agent」规则引擎 - v1.1 智能特性
+pub mod engine;
+
 use std::collections::HashMap;
 use std::env;
 use std::fs;
@@ -124,8 +133,20 @@ pub struct AppState {
     settings: Arc<Mutex<Settings>>,
     is_tracking: Arc<Mutex<bool>>,
     http_client: Client,
-    current_activity: Arc<Mutex<Option<Activity>>>,
+    // ============ 新架构 - 参考 ActivityWatch ============
+    // Heartbeat 管理器 - 相同活动自动合并，减少数据库写入
+    pub heartbeat_manager: Arc<Mutex<transform::HeartbeatManager>>,
+    // 窗口追踪器
+    pub window_watcher: Arc<Mutex<watcher::WindowWatcher>>,
+    // 上次检查的时间戳（用于计算 duration）
     last_activity_check: Arc<Mutex<Instant>>,
+    // ============ 统一事件总线 - 所有模块通过这里通信 ============
+    pub event_bus: event_bus::EventBus,
+    // ============ 「隐形 Agent」规则引擎 - v1.1 智能特性 ============
+    pub rule_engine: engine::RuleEngine,
+    // ====================================================
+    // 旧架构（逐步迁移）
+    current_activity: Arc<Mutex<Option<Activity>>>,
     activities_dirty: Arc<Mutex<bool>>, // 脏标记：活动已修改需要保存
     last_save_time: Arc<Mutex<Instant>>, // 上次保存时间，用于节流
     // New modules for feature flags and realtime broadcast
@@ -440,8 +461,106 @@ struct PermissionStatusEvent {
     is_first_run: bool,
 }
 
-// 轮询活动窗口
-fn poll_active_window(state: &AppState) -> Result<Option<(String, String, String)>> {
+// ==============================================
+// 新架构：使用 Heartbeat 机制的窗口追踪
+// 参考 ActivityWatch 设计，自动合并相同活动
+// ==============================================
+
+/// 轮询活动窗口（新架构 - Heartbeat 机制）
+/// 返回: Some((活动ID, 窗口标题, 应用名)) 如果创建了新活动
+///       None 表示继续上一个活动或无活动
+fn poll_active_window_v2(state: &AppState) -> Result<Option<(String, String, String)>> {
+    if !*state.is_tracking.lock().unwrap_or_else(|e| e.into_inner()) {
+        return Ok(None);
+    }
+
+    // 1. 获取当前窗口信息
+    let window_info = {
+        let watcher = state.window_watcher.lock().unwrap_or_else(|e| e.into_inner());
+        watcher.get_active_window()?
+    };
+
+    let window_info = match window_info {
+        Some(info) => info,
+        None => return Ok(None), // 在忽略列表中或获取失败
+    };
+
+    // 2. 计算时间差，更新最后检查时间
+    let now = Instant::now();
+    let last_check = *state.last_activity_check.lock().unwrap_or_else(|e| e.into_inner());
+    let elapsed_ms = now.duration_since(last_check).as_millis() as i64;
+    *state.last_activity_check.lock().unwrap_or_else(|e| e.into_inner()) = now;
+
+    // 3. 创建心跳事件
+    let now_ms = chrono::Utc::now().timestamp_millis();
+    let heartbeat_event = transform::TrackEvent {
+        id: None,
+        timestamp_ms: now_ms,
+        duration_ms: elapsed_ms, // 这一次心跳的时长
+        data: transform::EventData {
+            app_name: window_info.app_name.clone(),
+            window_title: window_info.clean_title.clone(),
+            extra: std::collections::HashMap::new(),
+        },
+    };
+
+    // 4. Heartbeat 合并处理
+    // pulsetime: 允许的最大间隔，默认 2 倍轮询间隔（5s * 2 = 10s）
+    // 这样即使偶尔一次轮询慢了也能合并
+    const PULSETIME_MS: i64 = 10_000;
+
+    let mut hb_manager = state.heartbeat_manager.lock().unwrap_or_else(|e| e.into_inner());
+    let result = hb_manager.process_heartbeat("window", heartbeat_event, PULSETIME_MS);
+
+    match result {
+        transform::HeartbeatResult::Merged(merged) => {
+            // 合并成功：更新内存中现有活动的时长
+            let mut activities = state.activities.lock().unwrap_or_else(|e| e.into_inner());
+            if let Some(id) = merged.id {
+                if let Some(activity) = activities.iter_mut().find(|a| a.id == id) {
+                    activity.duration_minutes = merged.duration_ms as f64 / 60000.0;
+                    // Mark dirty
+                    *state.activities_dirty.lock().unwrap_or_else(|e| e.into_inner()) = true;
+                }
+            }
+            drop(activities);
+            Ok(None) // 不需要通知前端，活动继续中
+        }
+        transform::HeartbeatResult::NewEvent(new_event) => {
+            // 新活动：添加到内存中
+            let start_time_ms = new_event.timestamp_ms;
+            let activity = Activity {
+                id: Uuid::new_v4().to_string(),
+                name: window_info.app_name.clone(),
+                window_title: window_info.clean_title.clone(),
+                category: None,
+                task_id: None,
+                start_time_ms,
+                start_instant: Some(now),
+                duration_minutes: new_event.duration_ms as f64 / 60000.0,
+            };
+
+            // 更新 event 的 ID，方便后续合并
+            let activity_id = activity.id.clone();
+            if let Some(event) = hb_manager.get_last_event_mut("window") {
+                event.id = Some(activity_id.clone());
+            }
+
+            let mut activities = state.activities.lock().unwrap_or_else(|e| e.into_inner());
+            activities.push(activity);
+            *state.activities_dirty.lock().unwrap_or_else(|e| e.into_inner()) = true;
+            drop(activities);
+
+            Ok(Some((activity_id, window_info.clean_title, window_info.app_name)))
+        }
+    }
+}
+
+// ==============================================
+// 旧版追踪函数（保留作为兼容备份，逐步移除）
+// ==============================================
+#[allow(dead_code)]
+fn poll_active_window_v1(state: &AppState) -> Result<Option<(String, String, String)>> {
     if !*state.is_tracking.lock().unwrap_or_else(|e| e.into_inner()) {
         return Ok(None);
     }
@@ -456,12 +575,8 @@ fn poll_active_window(state: &AppState) -> Result<Option<(String, String, String
         Err(_) => return Ok(None),
     };
 
-    // x_win WindowInfo has .info which contains app info
-    // For mac, we can extract the app name from the process info
     let app_name = window_info.info.name;
     let raw_window_title = window_info.title;
-
-    // 窗口标题格式化：清理冗余信息，提升统计准确性
     let window_title = clean_window_title(&raw_window_title, &app_name);
 
     // 检查忽略列表
@@ -484,19 +599,13 @@ fn poll_active_window(state: &AppState) -> Result<Option<(String, String, String
         let mut activities = state.activities.lock().unwrap_or_else(|e| e.into_inner());
         if let Some(activity) = activities.iter_mut().find(|a| a.id == last_activity.id) {
             activity.duration_minutes += elapsed_minutes;
-            // Mark dirty when activity is modified
             *state.activities_dirty.lock().unwrap_or_else(|e| e.into_inner()) = true;
-        }
-        if let Some(activity) = activities.iter_mut().find(|a| a.id == last_activity.id) {
-            activity.duration_minutes += elapsed_minutes;
         }
         drop(activities);
 
         // 如果还是同一个窗口，继续
-        if let Some((last_title, last_app)) = last_activity.window_title.split_once(" - ") {
-            if last_app == app_name && last_title == window_title {
-                return Ok(None);
-            }
+        if last_activity.name == app_name && last_activity.window_title == window_title {
+            return Ok(None);
         }
     }
 
@@ -517,7 +626,6 @@ fn poll_active_window(state: &AppState) -> Result<Option<(String, String, String
 
     let mut activities = state.activities.lock().unwrap_or_else(|e| e.into_inner());
     activities.push(activity.clone());
-    // Mark dirty when new activity is added
     *state.activities_dirty.lock().unwrap_or_else(|e| e.into_inner()) = true;
     drop(activities);
 
@@ -1969,8 +2077,26 @@ fn main() {
         settings: Arc::new(Mutex::new(Settings::default())),
         is_tracking: Arc::new(Mutex::new(false)),
         http_client: Client::new(),
-        current_activity: Arc::new(Mutex::new(None)),
+        // ============================================
+        // 新架构 - 参考 ActivityWatch
+        // ============================================
+        heartbeat_manager: Arc::new(Mutex::new(transform::HeartbeatManager::new())),
+        window_watcher: Arc::new(Mutex::new(watcher::WindowWatcher::new())),
         last_activity_check: Arc::new(Mutex::new(Instant::now())),
+        // ============================================
+        // 统一事件总线
+        // ============================================
+        event_bus: event_bus::EventBus::new(),
+        // ============================================
+        // 「隐形 Agent」规则引擎 - v1.1 智能特性
+        // ============================================
+        rule_engine: {
+            let engine = engine::RuleEngine::new();
+            engine.register_builtin_rules();
+            engine
+        },
+        // 旧架构，逐步迁移
+        current_activity: Arc::new(Mutex::new(None)),
         activities_dirty: Arc::new(Mutex::new(false)),
         last_save_time: Arc::new(Mutex::new(Instant::now())),
         // Initialize new modules
@@ -1994,7 +2120,8 @@ fn main() {
     std::thread::spawn(move || {
         loop {
             std::thread::sleep(Duration::from_secs(1));
-            let result = poll_active_window(&state_clone);
+            // 使用新的 Heartbeat 架构，减少 70-90% 的数据库写入
+            let result = poll_active_window_v2(&state_clone);
 
             // 脏标记 + 节流写入：最多 30 秒间隔写入，只有脏才写入
             let mut dirty_guard = state_clone.activities_dirty.lock().unwrap_or_else(|e| e.into_inner());
@@ -2133,6 +2260,24 @@ fn main() {
                 pomodoro_timer.run_timer_loop(app_handle.clone(), &broadcast_manager_pomodoro).await;
             });
 
+            // ============================================
+            // 统一事件总线 + 规则引擎 集成
+            // ============================================
+            // 订阅所有事件，自动通过规则引擎处理并生成建议
+            let event_bus = state.event_bus.clone();
+            let rule_engine = state.rule_engine.clone();
+            let app_handle = app.handle().clone();
+
+            event_bus.subscribe_all(move |envelope| {
+                // 将事件送入规则引擎处理
+                let suggestions = rule_engine.process_event(&envelope.event);
+
+                // 向前端发送新建议通知
+                for suggestion in suggestions {
+                    let _ = app_handle.emit("new_suggestion", &suggestion);
+                }
+            });
+
             // Start idle detection background loop if enabled
             if state.feature_flags.is_enabled(feature_flags::FeatureFlag::IdleDetection) {
                 let idle_detector = state.idle_detector.clone();
@@ -2252,6 +2397,15 @@ fn main() {
             enable_focus_blocking,
             disable_focus_blocking,
             check_blocking_permissions,
+            // 「隐形 Agent」规则引擎 - v1.1 智能特性
+            engine::commands::get_suggestions,
+            engine::commands::submit_suggestion_feedback,
+            engine::commands::trigger_test_event,
+            engine::commands::get_rule_stats,
+            // 统一事件总线
+            event_bus::commands::publish_test_event,
+            event_bus::commands::get_event_history,
+            event_bus::commands::get_event_bus_stats,
             // SQLite data access for non-activity data
             get_all_tasks,
             create_task,

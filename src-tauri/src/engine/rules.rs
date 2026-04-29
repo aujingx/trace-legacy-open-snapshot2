@@ -134,6 +134,7 @@ impl Rule for DistractionPatternRule {
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct TaskEstimateRule {
     #[serde(skip)]
+    #[allow(dead_code)]
     task_history: std::sync::Arc<std::sync::Mutex<HashMap<String, Vec<f64>>>>,
 }
 

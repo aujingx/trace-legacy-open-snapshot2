@@ -9,7 +9,7 @@ interface TaskCardProps {
   onStartTimer?: () => void
 }
 
-export default function TaskCard({ task, priority = 'normal', onClick, onStartTimer }: TaskCardProps) {
+export default function TaskCard({ task, onClick, onStartTimer }: TaskCardProps) {
   const priorityConfig = getPriorityConfig(task.priority)
   const isCompleted = task.status === 'completed'
 

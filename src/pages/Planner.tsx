@@ -67,11 +67,6 @@ function todayStr(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
-function todayDisplay(): string {
-  return new Date().toLocaleDateString('zh-CN', {
-    year: 'numeric', month: 'long', day: 'numeric', weekday: 'long',
-  })
-}
 
 function fmtDuration(mins: number, t?: (key: string) => string): string {
   const unitMins = t ? t('common.minutes') : 'm'
@@ -159,7 +154,7 @@ export default function Planner() {
   const [viewMode, setViewMode] = useState<ViewMode>('list')
   const [filter, setFilter] = useState<FilterTab>('all')
   const [modalOpen, setModalOpen] = useState(false)
-  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editingId] = useState<string | null>(null)
   const [form, setForm] = useState<TaskForm>({ ...EMPTY_FORM })
   const [newSubtaskTitle, setNewSubtaskTitle] = useState('')
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
@@ -292,7 +287,7 @@ export default function Planner() {
   }, [tasks])
 
   // --- Modal handlers ---
-  const openAdd = useCallback((presetDate?: string) => {
+  const openAdd = useCallback((_presetDate?: string) => {
     setTaskPanelTask(null)
     setTaskPanelMode('create')
     setTaskPanelOpen(true)
@@ -616,9 +611,6 @@ export default function Planner() {
 
   // ============================================================
   // 今日进度统计
-  const todayTasks = filtered.filter((t) => t.dueDate === todayStr())
-  const todayCompleted = todayTasks.filter((t) => t.status === 'completed').length
-  const todayProgress = todayTasks.length > 0 ? Math.round((todayCompleted / todayTasks.length) * 100) : 0
 
   return (
     <div className="p-6 md:p-8 max-w-5xl mx-auto">

@@ -16,7 +16,7 @@ interface TaskCardProps {
 export default function TaskCard({
   task,
   selected = false,
-  onSelect,
+
   onClick,
   onStartTimer,
   onStatusChange,

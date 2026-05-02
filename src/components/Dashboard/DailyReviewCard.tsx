@@ -1,23 +1,26 @@
-import { ChevronRight, Sparkles } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { ChevronRight, Sparkles } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface Props {
-  totalMinutes: number
-  efficiencyScore: number
-  completedTasks: number
+  totalMinutes: number;
+  efficiencyScore: number;
+  completedTasks: number;
 }
 
 export default function DailyReviewCard({ totalMinutes, efficiencyScore, completedTasks }: Props) {
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
   const getFeedback = () => {
-    if (efficiencyScore >= 80) return { text: 'Excellent focus today!', emoji: '🌟', color: 'var(--color-green)' }
-    if (efficiencyScore >= 60) return { text: 'Good progress, keep going!', emoji: '💪', color: 'var(--color-blue)' }
-    if (efficiencyScore >= 40) return { text: 'Getting better each day', emoji: '🌱', color: 'var(--color-lemon)' }
-    return { text: 'Tomorrow is a fresh start', emoji: '🌅', color: 'var(--color-coral)' }
-  }
+    if (efficiencyScore >= 80)
+      return { text: 'Excellent focus today!', emoji: '🌟', color: 'var(--color-green)' };
+    if (efficiencyScore >= 60)
+      return { text: 'Good progress, keep going!', emoji: '💪', color: 'var(--color-blue)' };
+    if (efficiencyScore >= 40)
+      return { text: 'Getting better each day', emoji: '🌱', color: 'var(--color-lemon)' };
+    return { text: 'Tomorrow is a fresh start', emoji: '🌅', color: 'var(--color-coral)' };
+  };
 
-  const feedback = getFeedback()
+  const feedback = getFeedback();
 
   return (
     <div
@@ -91,5 +94,5 @@ export default function DailyReviewCard({ totalMinutes, efficiencyScore, complet
         </div>
       </div>
     </div>
-  )
+  );
 }

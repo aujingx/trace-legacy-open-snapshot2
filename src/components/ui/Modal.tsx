@@ -40,7 +40,9 @@ export default function Modal({
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
-      return () => { document.body.style.overflow = ''; };
+      return () => {
+        document.body.style.overflow = '';
+      };
     }
   }, [isOpen]);
 
@@ -49,7 +51,9 @@ export default function Modal({
   return (
     <div
       ref={overlayRef}
-      onClick={(e) => { if (e.target === overlayRef.current) onClose(); }}
+      onClick={(e) => {
+        if (e.target === overlayRef.current) onClose();
+      }}
       className={[
         'fixed inset-0 z-50 flex items-center justify-center p-4',
         'backdrop-blur-sm',
@@ -75,9 +79,7 @@ export default function Modal({
         {/* Header */}
         {title && (
           <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border-subtle)]/40">
-            <h2 className="text-base font-semibold text-[var(--color-text-primary)]">
-              {title}
-            </h2>
+            <h2 className="text-base font-semibold text-[var(--color-text-primary)]">{title}</h2>
             <CloseButton onClick={onClose} />
           </div>
         )}
@@ -90,9 +92,7 @@ export default function Modal({
         )}
 
         {/* Body */}
-        <div className="px-6 py-5 overflow-y-auto max-h-[70vh]">
-          {children}
-        </div>
+        <div className="px-6 py-5 overflow-y-auto max-h-[70vh]">{children}</div>
 
         {/* Footer */}
         {footer && (
@@ -128,7 +128,15 @@ function CloseButton({ onClick }: { onClick: () => void }) {
         'transition-colors duration-150 cursor-pointer',
       ].join(' ')}
     >
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 16 16"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      >
         <path d="M4 4l8 8M12 4l-8 8" />
       </svg>
     </button>

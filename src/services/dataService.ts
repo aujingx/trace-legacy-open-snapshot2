@@ -11,7 +11,16 @@
 // Types (re-exported for consumers)
 // ============================================================
 
-export type ActivityCategory = '开发' | '工作' | '学习' | '会议' | '休息' | '娱乐' | '运动' | '阅读' | '其他';
+export type ActivityCategory =
+  | '开发'
+  | '工作'
+  | '学习'
+  | '会议'
+  | '休息'
+  | '娱乐'
+  | '运动'
+  | '阅读'
+  | '其他';
 
 export interface Activity {
   id: string;
@@ -115,7 +124,16 @@ export interface AppSettings {
   language: string;
   // AI provider settings
   aiApiKey?: string;
-  aiProvider?: 'ernie' | 'doubao' | 'qwen' | 'glm' | 'openai' | 'claude' | 'gemini' | 'deepseek' | 'xai';
+  aiProvider?:
+    | 'ernie'
+    | 'doubao'
+    | 'qwen'
+    | 'glm'
+    | 'openai'
+    | 'claude'
+    | 'gemini'
+    | 'deepseek'
+    | 'xai';
   autoStartOnBoot?: boolean;
   ignoredApplications?: string[];
   // Privacy settings
@@ -248,7 +266,7 @@ const DataService = {
       return activityIpc.getActivitiesRange(startDate, endDate);
     }
     const all = load<Activity[]>(KEYS.activities, []);
-    return all.filter(a => {
+    return all.filter((a) => {
       const date = a.startTime.slice(0, 10);
       return date >= startDate && date <= endDate;
     });
@@ -270,7 +288,7 @@ const DataService = {
       await activityIpc.updateActivity(id, update);
     } else {
       const existing = load<Activity[]>(KEYS.activities, []);
-      const idx = existing.findIndex(a => a.id === id);
+      const idx = existing.findIndex((a) => a.id === id);
       if (idx >= 0) {
         existing[idx] = { ...existing[idx], ...update };
         save(KEYS.activities, existing);
@@ -283,7 +301,10 @@ const DataService = {
       await activityIpc.deleteActivity(id);
     } else {
       const existing = load<Activity[]>(KEYS.activities, []);
-      save(KEYS.activities, existing.filter(a => a.id !== id));
+      save(
+        KEYS.activities,
+        existing.filter((a) => a.id !== id)
+      );
     }
   },
 
@@ -292,11 +313,16 @@ const DataService = {
       await activityIpc.deleteActivities(ids);
     } else {
       const existing = load<Activity[]>(KEYS.activities, []);
-      save(KEYS.activities, existing.filter(a => !ids.includes(a.id)));
+      save(
+        KEYS.activities,
+        existing.filter((a) => !ids.includes(a.id))
+      );
     }
   },
 
-  getDailyStats: async (date: string): Promise<{
+  getDailyStats: async (
+    date: string
+  ): Promise<{
     totalMinutes: number;
     categories: Record<string, number>;
   }> => {
@@ -306,7 +332,7 @@ const DataService = {
     const activities = await DataService.getActivities(date);
     const totalMinutes = activities.reduce((sum, a) => sum + a.duration, 0);
     const categories: Record<string, number> = {};
-    activities.forEach(a => {
+    activities.forEach((a) => {
       categories[a.category] = (categories[a.category] || 0) + a.duration;
     });
     return { totalMinutes, categories };
@@ -339,7 +365,7 @@ const DataService = {
       await taskIpc.updateTask(id, update);
     } else {
       const existing = load<Task[]>(KEYS.tasks, []);
-      const idx = existing.findIndex(t => t.id === id);
+      const idx = existing.findIndex((t) => t.id === id);
       if (idx >= 0) {
         existing[idx] = { ...existing[idx], ...update };
         save(KEYS.tasks, existing);
@@ -353,13 +379,19 @@ const DataService = {
     } else {
       // Delete associated time blocks first (cascade delete)
       const allTimeBlocks = load<TimeBlock[]>(KEYS.timeBlocks, []);
-      const taskTimeBlocks = allTimeBlocks.filter(b => b.taskId === id);
+      const taskTimeBlocks = allTimeBlocks.filter((b) => b.taskId === id);
       for (const block of taskTimeBlocks) {
-        save(KEYS.timeBlocks, allTimeBlocks.filter(b => b.id !== block.id));
+        save(
+          KEYS.timeBlocks,
+          allTimeBlocks.filter((b) => b.id !== block.id)
+        );
       }
       // Then delete the task itself
       const existing = load<Task[]>(KEYS.tasks, []);
-      save(KEYS.tasks, existing.filter(t => t.id !== id));
+      save(
+        KEYS.tasks,
+        existing.filter((t) => t.id !== id)
+      );
     }
   },
 
@@ -373,7 +405,9 @@ const DataService = {
     return load<Habit[]>(KEYS.habits, []);
   },
 
-  createHabit: async (habit: Omit<Habit, 'id' | 'streak' | 'checkins' | 'createdAt'>): Promise<Habit> => {
+  createHabit: async (
+    habit: Omit<Habit, 'id' | 'streak' | 'checkins' | 'createdAt'>
+  ): Promise<Habit> => {
     const newHabit: Habit = {
       ...habit,
       id: uid(),
@@ -396,7 +430,7 @@ const DataService = {
       await habitIpc.updateHabit(id, update);
     } else {
       const existing = load<Habit[]>(KEYS.habits, []);
-      const idx = existing.findIndex(h => h.id === id);
+      const idx = existing.findIndex((h) => h.id === id);
       if (idx >= 0) {
         existing[idx] = { ...existing[idx], ...update };
         save(KEYS.habits, existing);
@@ -410,7 +444,10 @@ const DataService = {
     } else {
       // Delete the habit itself
       const existing = load<Habit[]>(KEYS.habits, []);
-      save(KEYS.habits, existing.filter(h => h.id !== id));
+      save(
+        KEYS.habits,
+        existing.filter((h) => h.id !== id)
+      );
     }
   },
 
@@ -419,7 +456,7 @@ const DataService = {
       await habitIpc.recordCheckin(habitId, date, value);
     } else {
       const existing = load<Habit[]>(KEYS.habits, []);
-      const idx = existing.findIndex(h => h.id === habitId);
+      const idx = existing.findIndex((h) => h.id === habitId);
       if (idx >= 0) {
         existing[idx].checkins[date] = value;
         save(KEYS.habits, existing);
@@ -435,7 +472,7 @@ const DataService = {
       return focusIpc.getFocusSessions(date);
     }
     return load<FocusSession[]>(KEYS.focusSessions, []).filter(
-      s => s.startTime.slice(0, 10) === date
+      (s) => s.startTime.slice(0, 10) === date
     );
   },
 
@@ -463,7 +500,7 @@ const DataService = {
       await focusIpc.updateFocusSession(id, update);
     } else {
       const existing = load<FocusSession[]>(KEYS.focusSessions, []);
-      const idx = existing.findIndex(s => s.id === id);
+      const idx = existing.findIndex((s) => s.id === id);
       if (idx >= 0) {
         existing[idx] = { ...existing[idx], ...update };
         save(KEYS.focusSessions, existing);
@@ -476,7 +513,10 @@ const DataService = {
       await focusIpc.deleteFocusSession(id);
     } else {
       const existing = load<FocusSession[]>(KEYS.focusSessions, []);
-      save(KEYS.focusSessions, existing.filter(s => s.id !== id));
+      save(
+        KEYS.focusSessions,
+        existing.filter((s) => s.id !== id)
+      );
     }
   },
 
@@ -487,7 +527,7 @@ const DataService = {
     if (isDesktop()) {
       return timeBlockIpc.getTimeBlocks(date);
     }
-    return load<TimeBlock[]>(KEYS.timeBlocks, []).filter(b => b.date === date);
+    return load<TimeBlock[]>(KEYS.timeBlocks, []).filter((b) => b.date === date);
   },
 
   addTimeBlock: async (block: Omit<TimeBlock, 'id'>): Promise<TimeBlock> => {
@@ -507,7 +547,7 @@ const DataService = {
       await timeBlockIpc.updateTimeBlock(id, update);
     } else {
       const existing = load<TimeBlock[]>(KEYS.timeBlocks, []);
-      const idx = existing.findIndex(b => b.id === id);
+      const idx = existing.findIndex((b) => b.id === id);
       if (idx >= 0) {
         existing[idx] = { ...existing[idx], ...update };
         save(KEYS.timeBlocks, existing);
@@ -520,7 +560,10 @@ const DataService = {
       await timeBlockIpc.deleteTimeBlock(id);
     } else {
       const existing = load<TimeBlock[]>(KEYS.timeBlocks, []);
-      save(KEYS.timeBlocks, existing.filter(b => b.id !== id));
+      save(
+        KEYS.timeBlocks,
+        existing.filter((b) => b.id !== id)
+      );
     }
   },
 
@@ -580,7 +623,12 @@ const DataService = {
     const activities = (() => {
       const result: Activity[] = [];
       const now = new Date();
-      const activityTemplates: { name: string; category: ActivityCategory; minDur: number; maxDur: number }[] = [
+      const activityTemplates: {
+        name: string;
+        category: ActivityCategory;
+        minDur: number;
+        maxDur: number;
+      }[] = [
         { name: '前端开发 - React组件', category: '开发', minDur: 40, maxDur: 120 },
         { name: 'API接口开发', category: '开发', minDur: 30, maxDur: 90 },
         { name: 'Bug修复', category: '开发', minDur: 15, maxDur: 60 },
@@ -628,21 +676,21 @@ const DataService = {
         for (let i = 0; i < count; i++) {
           let template: (typeof activityTemplates)[number];
           if (currentHour >= 12 && currentHour < 13 && !isWeekend) {
-            template = activityTemplates.find(t => t.name === '午休')!;
+            template = activityTemplates.find((t) => t.name === '午休')!;
           } else if (currentHour >= 15 && currentHour < 16 && rand() > 0.6 && !isWeekend) {
-            template = activityTemplates.find(t => t.name === '下午茶歇')!;
+            template = activityTemplates.find((t) => t.name === '下午茶歇')!;
           } else if (isWeekend) {
-            const weekendPool = activityTemplates.filter(t =>
+            const weekendPool = activityTemplates.filter((t) =>
               ['开发', '工作', '会议', '学习', '娱乐', '运动', '阅读', '休息'].includes(t.category)
             );
             template = pick(weekendPool);
           } else if (currentHour < 10) {
-            const morningPool = activityTemplates.filter(t =>
+            const morningPool = activityTemplates.filter((t) =>
               ['开发', '工作', '会议', '学习'].includes(t.category)
             );
             template = pick(morningPool);
           } else if (currentHour >= 18) {
-            const eveningPool = activityTemplates.filter(t =>
+            const eveningPool = activityTemplates.filter((t) =>
               ['学习', '娱乐', '运动', '阅读', '休息'].includes(t.category)
             );
             template = pick(eveningPool);
@@ -678,238 +726,244 @@ const DataService = {
     })();
 
     save(KEYS.activities, activities);
-    save(KEYS.tasks, (() => {
-      const now = new Date();
-      const templates: Omit<Task, 'id' | 'createdAt'>[] = [
-        {
-          title: '完成用户登录页面重构',
-          priority: 4,
-          status: 'in_progress',
-          estimatedMinutes: 180,
-          actualMinutes: 95,
-          project: '前端重构',
-          subtasks: [
-            { id: uid(), title: '设计新UI', completed: true },
-            { id: uid(), title: '实现表单验证', completed: true },
-            { id: uid(), title: '接入OAuth', completed: false },
-          ],
-          dueDate: toDateStr(new Date(now.getTime() + 2 * 86400000)),
-          repeatType: 'none',
-          firstStep: '打开Figma查看设计稿',
-          emotionalTag: 'neutral',
-        },
-        {
-          title: '编写单元测试 - 数据服务',
-          priority: 3,
-          status: 'todo',
-          estimatedMinutes: 120,
-          actualMinutes: 0,
-          project: '前端重构',
-          subtasks: [],
-          dueDate: toDateStr(new Date(now.getTime() + 5 * 86400000)),
-          repeatType: 'none',
-          firstStep: '创建test文件',
-          emotionalTag: 'resist',
-        },
-        {
-          title: '每日站会',
-          priority: 2,
-          status: 'completed',
-          estimatedMinutes: 15,
-          actualMinutes: 12,
-          project: '团队管理',
-          subtasks: [],
-          dueDate: toDateStr(now),
-          repeatType: 'daily',
-          firstStep: '准备昨日工作总结',
-          emotionalTag: 'easy',
-        },
-        {
-          title: '准备周五技术分享',
-          priority: 3,
-          status: 'in_progress',
-          estimatedMinutes: 240,
-          actualMinutes: 60,
-          project: '个人成长',
-          subtasks: [
-            { id: uid(), title: '选定主题', completed: true },
-            { id: uid(), title: '制作PPT', completed: false },
-            { id: uid(), title: '准备Demo', completed: false },
-          ],
-          dueDate: toDateStr(new Date(now.getTime() + 4 * 86400000)),
-          repeatType: 'none',
-          firstStep: '确定分享主题',
-          emotionalTag: 'neutral',
-        },
-        {
-          title: '优化首页加载性能',
-          priority: 5,
-          status: 'todo',
-          estimatedMinutes: 300,
-          actualMinutes: 0,
-          project: '前端重构',
-          subtasks: [
-            { id: uid(), title: '分析性能瓶颈', completed: false },
-            { id: uid(), title: '实现代码分割', completed: false },
-            { id: uid(), title: '图片懒加载', completed: false },
-            { id: uid(), title: '性能测试', completed: false },
-          ],
-          dueDate: toDateStr(new Date(now.getTime() + 7 * 86400000)),
-          repeatType: 'none',
-          firstStep: '运行Lighthouse分析',
-          emotionalTag: 'resist',
-        },
-        {
-          title: '阅读《设计模式》第5章',
-          priority: 2,
-          status: 'todo',
-          estimatedMinutes: 60,
-          actualMinutes: 0,
-          project: '个人成长',
-          subtasks: [],
-          dueDate: toDateStr(new Date(now.getTime() + 1 * 86400000)),
-          repeatType: 'none',
-          firstStep: '翻到第5章',
-          emotionalTag: 'easy',
-        },
-        {
-          title: '整理Jira看板',
-          priority: 1,
-          status: 'completed',
-          estimatedMinutes: 30,
-          actualMinutes: 25,
-          project: '团队管理',
-          subtasks: [],
-          dueDate: toDateStr(now),
-          repeatType: 'weekly',
-          firstStep: '打开Jira页面',
-          emotionalTag: 'easy',
-        },
-        {
-          title: '修复移动端样式问题',
-          priority: 4,
-          status: 'in_progress',
-          estimatedMinutes: 90,
-          actualMinutes: 40,
-          project: '前端重构',
-          subtasks: [
-            { id: uid(), title: '导航栏适配', completed: true },
-            { id: uid(), title: '表格响应式', completed: false },
-          ],
-          dueDate: toDateStr(new Date(now.getTime() + 1 * 86400000)),
-          repeatType: 'none',
-          firstStep: '用Chrome开发者工具模拟手机',
-          emotionalTag: 'neutral',
-        },
-        {
-          title: '更新项目文档',
-          priority: 2,
-          status: 'todo',
-          estimatedMinutes: 60,
-          actualMinutes: 0,
-          project: '前端重构',
-          subtasks: [],
-          dueDate: toDateStr(new Date(now.getTime() + 3 * 86400000)),
-          repeatType: 'none',
-          firstStep: '找到README.md位置',
-          emotionalTag: 'easy',
-        },
-        {
-          title: '复习英语单词',
-          priority: 2,
-          status: 'todo',
-          estimatedMinutes: 30,
-          actualMinutes: 0,
-          project: '个人成长',
-          subtasks: [],
-          dueDate: toDateStr(now),
-          repeatType: 'daily',
-          firstStep: '打开背单词APP',
-          emotionalTag: 'easy',
-        },
-        {
-          title: '代码审查 - 用户模块',
-          priority: 3,
-          status: 'paused',
-          estimatedMinutes: 45,
-          actualMinutes: 15,
-          project: '团队管理',
-          subtasks: [],
-          dueDate: toDateStr(new Date(now.getTime() + 3 * 86400000)),
-          repeatType: 'none',
-          firstStep: '找到PR链接',
-          emotionalTag: 'neutral',
-        },
-        {
-          title: '数据库架构设计评审',
-          priority: 4,
-          status: 'archived',
-          estimatedMinutes: 120,
-          actualMinutes: 90,
-          project: '后端开发',
-          subtasks: [],
-          dueDate: toDateStr(new Date(now.getTime() - 5 * 86400000)),
-          repeatType: 'none',
-          emotionalTag: 'neutral',
-        },
-      ];
+    save(
+      KEYS.tasks,
+      (() => {
+        const now = new Date();
+        const templates: Omit<Task, 'id' | 'createdAt'>[] = [
+          {
+            title: '完成用户登录页面重构',
+            priority: 4,
+            status: 'in_progress',
+            estimatedMinutes: 180,
+            actualMinutes: 95,
+            project: '前端重构',
+            subtasks: [
+              { id: uid(), title: '设计新UI', completed: true },
+              { id: uid(), title: '实现表单验证', completed: true },
+              { id: uid(), title: '接入OAuth', completed: false },
+            ],
+            dueDate: toDateStr(new Date(now.getTime() + 2 * 86400000)),
+            repeatType: 'none',
+            firstStep: '打开Figma查看设计稿',
+            emotionalTag: 'neutral',
+          },
+          {
+            title: '编写单元测试 - 数据服务',
+            priority: 3,
+            status: 'todo',
+            estimatedMinutes: 120,
+            actualMinutes: 0,
+            project: '前端重构',
+            subtasks: [],
+            dueDate: toDateStr(new Date(now.getTime() + 5 * 86400000)),
+            repeatType: 'none',
+            firstStep: '创建test文件',
+            emotionalTag: 'resist',
+          },
+          {
+            title: '每日站会',
+            priority: 2,
+            status: 'completed',
+            estimatedMinutes: 15,
+            actualMinutes: 12,
+            project: '团队管理',
+            subtasks: [],
+            dueDate: toDateStr(now),
+            repeatType: 'daily',
+            firstStep: '准备昨日工作总结',
+            emotionalTag: 'easy',
+          },
+          {
+            title: '准备周五技术分享',
+            priority: 3,
+            status: 'in_progress',
+            estimatedMinutes: 240,
+            actualMinutes: 60,
+            project: '个人成长',
+            subtasks: [
+              { id: uid(), title: '选定主题', completed: true },
+              { id: uid(), title: '制作PPT', completed: false },
+              { id: uid(), title: '准备Demo', completed: false },
+            ],
+            dueDate: toDateStr(new Date(now.getTime() + 4 * 86400000)),
+            repeatType: 'none',
+            firstStep: '确定分享主题',
+            emotionalTag: 'neutral',
+          },
+          {
+            title: '优化首页加载性能',
+            priority: 5,
+            status: 'todo',
+            estimatedMinutes: 300,
+            actualMinutes: 0,
+            project: '前端重构',
+            subtasks: [
+              { id: uid(), title: '分析性能瓶颈', completed: false },
+              { id: uid(), title: '实现代码分割', completed: false },
+              { id: uid(), title: '图片懒加载', completed: false },
+              { id: uid(), title: '性能测试', completed: false },
+            ],
+            dueDate: toDateStr(new Date(now.getTime() + 7 * 86400000)),
+            repeatType: 'none',
+            firstStep: '运行Lighthouse分析',
+            emotionalTag: 'resist',
+          },
+          {
+            title: '阅读《设计模式》第5章',
+            priority: 2,
+            status: 'todo',
+            estimatedMinutes: 60,
+            actualMinutes: 0,
+            project: '个人成长',
+            subtasks: [],
+            dueDate: toDateStr(new Date(now.getTime() + 1 * 86400000)),
+            repeatType: 'none',
+            firstStep: '翻到第5章',
+            emotionalTag: 'easy',
+          },
+          {
+            title: '整理Jira看板',
+            priority: 1,
+            status: 'completed',
+            estimatedMinutes: 30,
+            actualMinutes: 25,
+            project: '团队管理',
+            subtasks: [],
+            dueDate: toDateStr(now),
+            repeatType: 'weekly',
+            firstStep: '打开Jira页面',
+            emotionalTag: 'easy',
+          },
+          {
+            title: '修复移动端样式问题',
+            priority: 4,
+            status: 'in_progress',
+            estimatedMinutes: 90,
+            actualMinutes: 40,
+            project: '前端重构',
+            subtasks: [
+              { id: uid(), title: '导航栏适配', completed: true },
+              { id: uid(), title: '表格响应式', completed: false },
+            ],
+            dueDate: toDateStr(new Date(now.getTime() + 1 * 86400000)),
+            repeatType: 'none',
+            firstStep: '用Chrome开发者工具模拟手机',
+            emotionalTag: 'neutral',
+          },
+          {
+            title: '更新项目文档',
+            priority: 2,
+            status: 'todo',
+            estimatedMinutes: 60,
+            actualMinutes: 0,
+            project: '前端重构',
+            subtasks: [],
+            dueDate: toDateStr(new Date(now.getTime() + 3 * 86400000)),
+            repeatType: 'none',
+            firstStep: '找到README.md位置',
+            emotionalTag: 'easy',
+          },
+          {
+            title: '复习英语单词',
+            priority: 2,
+            status: 'todo',
+            estimatedMinutes: 30,
+            actualMinutes: 0,
+            project: '个人成长',
+            subtasks: [],
+            dueDate: toDateStr(now),
+            repeatType: 'daily',
+            firstStep: '打开背单词APP',
+            emotionalTag: 'easy',
+          },
+          {
+            title: '代码审查 - 用户模块',
+            priority: 3,
+            status: 'paused',
+            estimatedMinutes: 45,
+            actualMinutes: 15,
+            project: '团队管理',
+            subtasks: [],
+            dueDate: toDateStr(new Date(now.getTime() + 3 * 86400000)),
+            repeatType: 'none',
+            firstStep: '找到PR链接',
+            emotionalTag: 'neutral',
+          },
+          {
+            title: '数据库架构设计评审',
+            priority: 4,
+            status: 'archived',
+            estimatedMinutes: 120,
+            actualMinutes: 90,
+            project: '后端开发',
+            subtasks: [],
+            dueDate: toDateStr(new Date(now.getTime() - 5 * 86400000)),
+            repeatType: 'none',
+            emotionalTag: 'neutral',
+          },
+        ];
 
-      return templates.map((t, i) => ({
-        ...t,
-        id: uid(),
-        createdAt: new Date(new Date(now).getTime() - 14 * 86400000 + i * 86400000).toISOString(),
-      }));
-    })());
+        return templates.map((t, i) => ({
+          ...t,
+          id: uid(),
+          createdAt: new Date(new Date(now).getTime() - 14 * 86400000 + i * 86400000).toISOString(),
+        }));
+      })()
+    );
 
     // Seed time blocks with task associations for today
-    save(KEYS.timeBlocks, (() => {
-      const now = new Date();
-      const today = toDateStr(now);
-      const tasks = load<Task[]>(KEYS.tasks, []);
-      const blocks: TimeBlock[] = [];
+    save(
+      KEYS.timeBlocks,
+      (() => {
+        const now = new Date();
+        const today = toDateStr(now);
+        const tasks = load<Task[]>(KEYS.tasks, []);
+        const blocks: TimeBlock[] = [];
 
-      // Add a task time block for the first 2 tasks (scheduled for today)
-      if (tasks.length >= 2) {
-        // Task 1: 10:00 - 11:30
-        blocks.push({
-          id: uid(),
-          title: tasks[0].title,
-          category: '工作',
-          startTime: `${today}T10:00:00`,
-          endTime: `${today}T11:30:00`,
-          durationMinutes: 90,
-          date: today,
-          completed: true,
-          source: 'confirmed',
-          taskId: tasks[0].id,
-          isTaskTimer: true,
-        });
+        // Add a task time block for the first 2 tasks (scheduled for today)
+        if (tasks.length >= 2) {
+          // Task 1: 10:00 - 11:30
+          blocks.push({
+            id: uid(),
+            title: tasks[0].title,
+            category: '工作',
+            startTime: `${today}T10:00:00`,
+            endTime: `${today}T11:30:00`,
+            durationMinutes: 90,
+            date: today,
+            completed: true,
+            source: 'confirmed',
+            taskId: tasks[0].id,
+            isTaskTimer: true,
+          });
 
-        // Task 2: 14:00 - 15:00
-        blocks.push({
-          id: uid(),
-          title: tasks[1].title,
-          category: '开发',
-          startTime: `${today}T14:00:00`,
-          endTime: `${today}T15:00:00`,
-          durationMinutes: 60,
-          date: today,
-          completed: false,
-          source: 'confirmed',
-          taskId: tasks[1].id,
-          isTaskTimer: true,
-        });
+          // Task 2: 14:00 - 15:00
+          blocks.push({
+            id: uid(),
+            title: tasks[1].title,
+            category: '开发',
+            startTime: `${today}T14:00:00`,
+            endTime: `${today}T15:00:00`,
+            durationMinutes: 60,
+            date: today,
+            completed: false,
+            source: 'confirmed',
+            taskId: tasks[1].id,
+            isTaskTimer: true,
+          });
 
-        // Update tasks to have scheduled times
-        tasks[0].scheduledStartTime = `${today}T10:00:00`;
-        tasks[0].scheduledDate = today;
-        tasks[1].scheduledStartTime = `${today}T14:00:00`;
-        tasks[1].scheduledDate = today;
-        save(KEYS.tasks, tasks);
-      }
+          // Update tasks to have scheduled times
+          tasks[0].scheduledStartTime = `${today}T10:00:00`;
+          tasks[0].scheduledDate = today;
+          tasks[1].scheduledStartTime = `${today}T14:00:00`;
+          tasks[1].scheduledDate = today;
+          save(KEYS.tasks, tasks);
+        }
 
-      return blocks;
-    })());
+        return blocks;
+      })()
+    );
 
     save(KEYS.seeded, true);
   },

@@ -1,7 +1,7 @@
-import { Play, BrainCircuit, Coffee, Clock } from 'lucide-react'
-import { useFocusStore } from '../services/focusDetection'
-import { useAppStore } from '../store/useAppStore'
-import type { Task, ActivityCategory } from '../services/dataService'
+import { Play, Coffee, Clock } from 'lucide-react';
+import { useFocusStore } from '../services/focusDetection';
+import { useAppStore } from '../store/useAppStore';
+import type { Task, ActivityCategory } from '../services/dataService';
 
 const PRIORITY_COLORS: Record<number, string> = {
   1: 'var(--color-text-muted)',
@@ -9,27 +9,27 @@ const PRIORITY_COLORS: Record<number, string> = {
   3: 'var(--color-lemon)',
   4: 'var(--color-coral)',
   5: '#FF5252',
-}
+};
 
 const CATEGORY_COLORS: Record<ActivityCategory, string> = {
-  '开发': 'var(--color-blue)',
-  '工作': 'var(--color-blue)',
-  '会议': 'var(--color-purple)',
-  '休息': 'var(--color-green)',
-  '学习': 'var(--color-lemon)',
-  '娱乐': '#FFB3C6',
-  '运动': '#FFE5B4',
-  '阅读': '#B4D4FF',
-  '其他': 'var(--color-text-muted)',
-}
+  开发: 'var(--color-blue)',
+  工作: 'var(--color-blue)',
+  会议: 'var(--color-purple)',
+  休息: 'var(--color-green)',
+  学习: 'var(--color-lemon)',
+  娱乐: '#FFB3C6',
+  运动: '#FFE5B4',
+  阅读: '#B4D4FF',
+  其他: 'var(--color-text-muted)',
+};
 
 interface ContextCardProps {
-  tasks: Task[]
-  todayBlocks: any[]
-  wasInterrupted: boolean | null
-  recentEndTime: Date | null
-  onStartFocus: (task: Task) => void
-  className?: string
+  tasks: Task[];
+  todayBlocks: any[];
+  wasInterrupted: boolean | null;
+  recentEndTime: Date | null;
+  onStartFocus: (task: Task) => void;
+  className?: string;
 }
 
 export default function ContextCard({
@@ -40,12 +40,12 @@ export default function ContextCard({
   onStartFocus,
   className = '',
 }: ContextCardProps) {
-  const continuousFocusMinutes = useFocusStore(state => state.getContinuousFocusMinutes())
-  const isOnBreak = useFocusStore(state => state.isOnBreak)
-  const pendingEvent = useFocusStore(state => state.pendingEvent)
-  const handleUserChoice = useFocusStore(state => state.handleUserChoice)
+  const continuousFocusMinutes = useFocusStore((state) => state.getContinuousFocusMinutes());
+  const isOnBreak = useFocusStore((state) => state.isOnBreak);
+  const pendingEvent = useFocusStore((state) => state.pendingEvent);
+  const handleUserChoice = useFocusStore((state) => state.handleUserChoice);
 
-  const now = new Date()
+  const now = new Date();
 
   // ============================================
   // 🔔 状态 1: 检测到中断事件 (分心检测)
@@ -67,8 +67,13 @@ export default function ContextCard({
           </h3>
         </div>
         <p className="text-sm mb-4" style={{ color: 'var(--color-text-secondary)' }}>
-          当前打开：<span className="font-medium" style={{ color: 'var(--color-text-primary)' }}>{pendingEvent.appName}</span>
-          <span className="ml-2 text-xs" style={{ color: 'var(--color-text-muted)' }}>({pendingEvent.durationMinutes} 分钟)</span>
+          当前打开：
+          <span className="font-medium" style={{ color: 'var(--color-text-primary)' }}>
+            {pendingEvent.appName}
+          </span>
+          <span className="ml-2 text-xs" style={{ color: 'var(--color-text-muted)' }}>
+            ({pendingEvent.durationMinutes} 分钟)
+          </span>
         </p>
         <p className="text-xs mb-4" style={{ color: 'var(--color-text-muted)' }}>
           这段时间你在做什么？
@@ -97,7 +102,7 @@ export default function ContextCard({
           </button>
         </div>
       </div>
-    )
+    );
   }
 
   // ============================================
@@ -106,8 +111,8 @@ export default function ContextCard({
   if (wasInterrupted && recentEndTime) {
     const lastBlock = [...todayBlocks].sort(
       (a, b) => new Date(b.endTime).getTime() - new Date(a.endTime).getTime()
-    )[0]
-    const minutesAgo = Math.round((now.getTime() - recentEndTime.getTime()) / 1000 / 60)
+    )[0];
+    const minutesAgo = Math.round((now.getTime() - recentEndTime.getTime()) / 1000 / 60);
 
     return (
       <div
@@ -132,7 +137,9 @@ export default function ContextCard({
             className="p-4 rounded-xl mb-4"
             style={{ background: '#EFF6FF', border: '1px solid #BFDBFE' }}
           >
-            <p className="text-xs mb-1" style={{ color: '#60A5FA' }}>上次进行的任务：</p>
+            <p className="text-xs mb-1" style={{ color: '#60A5FA' }}>
+              上次进行的任务：
+            </p>
             <p className="text-sm font-medium" style={{ color: '#1E40AF' }}>
               {lastBlock.title}
             </p>
@@ -146,7 +153,7 @@ export default function ContextCard({
           <Play size={16} /> 继续专注
         </button>
       </div>
-    )
+    );
   }
 
   // ============================================
@@ -168,11 +175,16 @@ export default function ContextCard({
             🔥 专注状态
           </h3>
         </div>
-        <div className="text-center py-5 mb-4" style={{ background: '#ECFDF5', borderRadius: '12px' }}>
+        <div
+          className="text-center py-5 mb-4"
+          style={{ background: '#ECFDF5', borderRadius: '12px' }}
+        >
           <p className="text-4xl font-bold mb-1" style={{ color: '#047857' }}>
             {continuousFocusMinutes}
           </p>
-          <p className="text-xs" style={{ color: '#6EE7B7' }}>分钟</p>
+          <p className="text-xs" style={{ color: '#6EE7B7' }}>
+            分钟
+          </p>
         </div>
         <button
           onClick={() => useFocusStore.getState().startBreak(5)}
@@ -182,15 +194,15 @@ export default function ContextCard({
           <Coffee size={16} /> 休息 5 分钟
         </button>
       </div>
-    )
+    );
   }
 
   // ============================================
   // 💡 状态 4: 空闲中 - AI 推荐接下来做什么
   // 🎯 使用统一的推荐逻辑（和 NowEngineCard 一致）
   // ============================================
-  const getTopScoredRecommendation = useAppStore((s) => s.getTopScoredRecommendation)
-  const topRecommendation = getTopScoredRecommendation()
+  const getTopScoredRecommendation = useAppStore((s) => s.getTopScoredRecommendation);
+  const topRecommendation = getTopScoredRecommendation();
 
   return (
     <div
@@ -201,13 +213,6 @@ export default function ContextCard({
         boxShadow: '4px 4px 0px var(--color-border-strong)',
       }}
     >
-      <div className="flex items-center gap-2 mb-4">
-        <BrainCircuit size={18} style={{ color: '#F59E0B' }} />
-        <span className="text-base font-semibold" style={{ color: '#D97706' }}>
-          智能建议
-        </span>
-      </div>
-
       {topRecommendation ? (
         <div
           className="p-4 rounded-xl transition-all hover:shadow-md"
@@ -216,10 +221,15 @@ export default function ContextCard({
           <div className="flex items-start gap-2 mb-2">
             <div
               className="w-2.5 h-2.5 rounded-full flex-shrink-0 mt-1"
-              style={{ background: PRIORITY_COLORS[topRecommendation.task.priority] || PRIORITY_COLORS[1] }}
+              style={{
+                background: PRIORITY_COLORS[topRecommendation.task.priority] || PRIORITY_COLORS[1],
+              }}
               title={`优先级: ${topRecommendation.task.priority}`}
             />
-            <p className="text-sm font-medium flex-1 truncate" style={{ color: 'var(--color-text-primary)' }}>
+            <p
+              className="text-sm font-medium flex-1 truncate"
+              style={{ color: 'var(--color-text-primary)' }}
+            >
               {topRecommendation.task.title}
             </p>
           </div>
@@ -231,13 +241,18 @@ export default function ContextCard({
               className="text-xs px-2 py-0.5 rounded-full font-medium"
               style={{
                 background: `${CATEGORY_COLORS[topRecommendation.task.project as ActivityCategory] || CATEGORY_COLORS['其他']}30`,
-                color: CATEGORY_COLORS[topRecommendation.task.project as ActivityCategory] || CATEGORY_COLORS['其他'],
+                color:
+                  CATEGORY_COLORS[topRecommendation.task.project as ActivityCategory] ||
+                  CATEGORY_COLORS['其他'],
               }}
             >
               {topRecommendation.task.project || '待分类'}
             </span>
             {topRecommendation.task.estimatedMinutes && (
-              <span className="text-xs flex items-center gap-1" style={{ color: 'var(--color-text-muted)' }}>
+              <span
+                className="text-xs flex items-center gap-1"
+                style={{ color: 'var(--color-text-muted)' }}
+              >
                 <Clock size={10} />
                 {topRecommendation.task.estimatedMinutes} 分钟
               </span>
@@ -252,7 +267,10 @@ export default function ContextCard({
           </button>
         </div>
       ) : (
-        <div className="text-center py-8" style={{ background: '#FAF8F5', borderRadius: '12px' }}>
+        <div
+          className="text-center py-8"
+          style={{ background: 'var(--color-bg-surface-1)', borderRadius: '12px' }}
+        >
           <p className="text-lg mb-1">🎉</p>
           <p className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>
             今日任务全部完成
@@ -263,5 +281,5 @@ export default function ContextCard({
         </div>
       )}
     </div>
-  )
+  );
 }

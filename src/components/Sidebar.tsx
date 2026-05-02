@@ -1,67 +1,89 @@
-import React, { useMemo } from 'react'
-import { NavLink, useLocation } from 'react-router-dom'
-import { useTranslation } from 'react-i18next'
-import {
-  LayoutDashboard,
-  Clock,
-  ListTodo,
-  BarChart3,
-  Settings,
-  User,
-} from 'lucide-react'
-import { useAppStore } from '../store/useAppStore'
-import type { AppState } from '../store/useAppStore'
-import { trackingService } from '../services/trackingService'
-import { useFocusModal } from '../App'
+import React, { useMemo } from 'react';
+import { NavLink, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { LayoutDashboard, Clock, ListTodo, BarChart3, Settings, User } from 'lucide-react';
+import { useAppStore } from '../store/useAppStore';
+import type { AppState } from '../store/useAppStore';
+import { trackingService } from '../services/trackingService';
+import { useFocusModal } from '../App';
 
 interface NavItem {
-  key: string
-  label: string
-  path: string
-  icon: React.ReactNode
-  end?: boolean
+  key: string;
+  label: string;
+  path: string;
+  icon: React.ReactNode;
+  end?: boolean;
 }
 
 function ALL_NAV_ITEMS(t: (key: string) => string): NavItem[] {
   return [
-    { key: 'dashboard', label: t('nav.dashboard'), path: '/', end: true,
-      icon: <LayoutDashboard size={18} strokeWidth={1.5} /> },
-    { key: 'timeline', label: t('nav.timeline'), path: '/timeline',
-      icon: <Clock size={18} strokeWidth={1.5} /> },
-    { key: 'task', label: t('nav.tasks'), path: '/task',
-      icon: <ListTodo size={18} strokeWidth={1.5} /> },
-    { key: 'analytics', label: t('nav.analytics'), path: '/analytics',
-      icon: <BarChart3 size={18} strokeWidth={1.5} /> },
-    { key: 'settings', label: t('nav.settings'), path: '/settings',
-      icon: <Settings size={18} strokeWidth={1.5} /> },
-  ]
+    {
+      key: 'dashboard',
+      label: t('nav.dashboard'),
+      path: '/',
+      end: true,
+      icon: <LayoutDashboard size={18} strokeWidth={1.5} />,
+    },
+    {
+      key: 'timeline',
+      label: t('nav.timeline'),
+      path: '/timeline',
+      icon: <Clock size={18} strokeWidth={1.5} />,
+    },
+    {
+      key: 'task',
+      label: t('nav.tasks'),
+      path: '/task',
+      icon: <ListTodo size={18} strokeWidth={1.5} />,
+    },
+    {
+      key: 'analytics',
+      label: t('nav.analytics'),
+      path: '/analytics',
+      icon: <BarChart3 size={18} strokeWidth={1.5} />,
+    },
+    {
+      key: 'settings',
+      label: t('nav.settings'),
+      path: '/settings',
+      icon: <Settings size={18} strokeWidth={1.5} />,
+    },
+  ];
 }
 
 /* ── Sidebar ── */
 export default function Sidebar() {
-  const { t } = useTranslation()
-  const activeModules = useAppStore((s: AppState) => s.activeModules)
-  const location = useLocation()
-  const { openFocusModal } = useFocusModal()
+  const { t } = useTranslation();
+  const activeModules = useAppStore((s: AppState) => s.activeModules);
+  const location = useLocation();
+  const { openFocusModal } = useFocusModal();
 
-  const navItems = useMemo(() => ALL_NAV_ITEMS(t), [t])
+  const navItems = useMemo(() => ALL_NAV_ITEMS(t), [t]);
 
   const visibleItems = useMemo(
     () => navItems.filter((item) => activeModules.includes(item.key)),
-    [navItems, activeModules],
-  )
+    [navItems, activeModules]
+  );
 
   return (
     <aside
-        className="relative flex flex-col h-screen bg-white border-r border-[var(--color-border-strong)]"
-        style={{ width: '248px' }}
-      >
+      className="relative flex flex-col h-screen bg-white border-r border-[var(--color-border-strong)]"
+      style={{ width: '248px' }}
+    >
       {/* ── Brand Logo ── */}
       <div className="flex items-center gap-2 px-6 py-8 shrink-0">
-        <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, var(--color-blue) 0%, var(--color-blue-hover) 100%)' }}>
+        <div
+          className="w-6 h-6 rounded-lg flex items-center justify-center"
+          style={{
+            background:
+              'linear-gradient(135deg, var(--color-blue) 0%, var(--color-blue-hover) 100%)',
+          }}
+        >
           <span className="text-white text-xs font-bold">Ξ</span>
         </div>
-        <span className="text-lg font-semibold" style={{ color: 'var(--color-text-primary)' }}>Trace AI</span>
+        <span className="text-lg font-semibold" style={{ color: 'var(--color-text-primary)' }}>
+          Trace AI
+        </span>
       </div>
 
       {/* ── Navigation ── */}
@@ -70,7 +92,7 @@ export default function Sidebar() {
           {visibleItems.map((item) => {
             const isActive = item.end
               ? location.pathname === item.path
-              : location.pathname.startsWith(item.path)
+              : location.pathname.startsWith(item.path);
 
             return (
               <li key={item.key}>
@@ -85,24 +107,22 @@ export default function Sidebar() {
                   }}
                   onMouseEnter={(e) => {
                     if (!isActive) {
-                      e.currentTarget.style.background = 'var(--color-bg-surface-3)'
+                      e.currentTarget.style.background = 'var(--color-bg-surface-3)';
                     }
                   }}
                   onMouseLeave={(e) => {
                     if (!isActive) {
-                      e.currentTarget.style.background = 'transparent'
+                      e.currentTarget.style.background = 'transparent';
                     }
                   }}
                 >
                   <span className="shrink-0 w-5 h-5 flex items-center justify-center">
                     {item.icon}
                   </span>
-                  <span className="text-sm font-medium">
-                    {item.label}
-                  </span>
+                  <span className="text-sm font-medium">{item.label}</span>
                 </NavLink>
               </li>
-            )
+            );
           })}
         </ul>
       </nav>
@@ -156,15 +176,21 @@ export default function Sidebar() {
             <User size={16} color="white" />
           </div>
           <div className="flex flex-col min-w-0">
-            <span className="text-sm font-semibold truncate" style={{ color: 'var(--color-text-primary)' }}>
+            <span
+              className="text-sm font-semibold truncate"
+              style={{ color: 'var(--color-text-primary)' }}
+            >
               Alex Trace
             </span>
-            <span className="text-[10px] font-semibold tracking-wider uppercase" style={{ color: 'var(--color-text-muted)' }}>
+            <span
+              className="text-[10px] font-semibold tracking-wider uppercase"
+              style={{ color: 'var(--color-text-muted)' }}
+            >
               Pro Account
             </span>
           </div>
         </div>
       </div>
     </aside>
-  )
+  );
 }

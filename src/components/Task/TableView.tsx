@@ -1,19 +1,19 @@
-import { useState, useMemo } from 'react'
-import { ChevronUp, ChevronDown, Play, Clock, Trash2 } from 'lucide-react'
-import InlineEdit from './InlineEdit'
-import type { Task, TaskStatus } from '../../services/dataService'
+import { useState, useMemo } from 'react';
+import { ChevronUp, ChevronDown, Play, Clock, Trash2 } from 'lucide-react';
+import InlineEdit from './InlineEdit';
+import type { Task, TaskStatus } from '../../services/dataService';
 
-type SortField = 'title' | 'status' | 'priority' | 'dueDate' | 'estimatedMinutes'
-type SortDirection = 'asc' | 'desc'
+type SortField = 'title' | 'status' | 'priority' | 'dueDate' | 'estimatedMinutes';
+type SortDirection = 'asc' | 'desc';
 
 interface TableViewProps {
-  tasks: Task[]
-  onUpdateTask: (id: string, updates: Partial<Task>) => void
-  onStartTimer: (task: Task) => void
-  onDeleteTask: (id: string) => void
-  onTaskClick: (task: Task) => void
-  selectedTasks: Set<string>
-  onTaskSelect: (id: string) => void
+  tasks: Task[];
+  onUpdateTask: (id: string, updates: Partial<Task>) => void;
+  onStartTimer: (task: Task) => void;
+  onDeleteTask: (id: string) => void;
+  onTaskClick: (task: Task) => void;
+  selectedTasks: Set<string>;
+  onTaskSelect: (id: string) => void;
 }
 
 export default function TableView({
@@ -25,69 +25,72 @@ export default function TableView({
   selectedTasks,
   onTaskSelect,
 }: TableViewProps) {
-  const [sortField, setSortField] = useState<SortField>('dueDate')
-  const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
+  const [sortField, setSortField] = useState<SortField>('dueDate');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
     } else {
-      setSortField(field)
-      setSortDirection('asc')
+      setSortField(field);
+      setSortDirection('asc');
     }
-  }
+  };
 
   const sortedTasks = useMemo(() => {
-    const sorted = [...tasks]
+    const sorted = [...tasks];
     sorted.sort((a, b) => {
-      let comparison = 0
+      let comparison = 0;
       switch (sortField) {
         case 'title':
-          comparison = a.title.localeCompare(b.title)
-          break
+          comparison = a.title.localeCompare(b.title);
+          break;
         case 'status':
-          comparison = a.status.localeCompare(b.status)
-          break
+          comparison = a.status.localeCompare(b.status);
+          break;
         case 'priority':
-          comparison = b.priority - a.priority
-          break
+          comparison = b.priority - a.priority;
+          break;
         case 'dueDate':
-          if (!a.dueDate && !b.dueDate) return 0
-          if (!a.dueDate) return 1
-          if (!b.dueDate) return -1
-          comparison = a.dueDate.localeCompare(b.dueDate)
-          break
+          if (!a.dueDate && !b.dueDate) return 0;
+          if (!a.dueDate) return 1;
+          if (!b.dueDate) return -1;
+          comparison = a.dueDate.localeCompare(b.dueDate);
+          break;
         case 'estimatedMinutes':
-          comparison = a.estimatedMinutes - b.estimatedMinutes
-          break
+          comparison = a.estimatedMinutes - b.estimatedMinutes;
+          break;
       }
-      return sortDirection === 'asc' ? comparison : -comparison
-    })
-    return sorted
-  }, [tasks, sortField, sortDirection])
+      return sortDirection === 'asc' ? comparison : -comparison;
+    });
+    return sorted;
+  }, [tasks, sortField, sortDirection]);
 
   const SortIcon = ({ field }: { field: SortField }) => {
     if (sortField !== field) {
-      return null
+      return null;
     }
     return sortDirection === 'asc' ? (
       <ChevronUp size={14} style={{ color: 'var(--color-blue)' }} />
     ) : (
       <ChevronDown size={14} style={{ color: 'var(--color-blue)' }} />
-    )
-  }
+    );
+  };
 
   if (tasks.length === 0) {
     return (
       <div
         className="p-12 text-center rounded-xl"
-        style={{ background: 'var(--color-bg-surface-1)', border: '2px dashed var(--color-border-light)' }}
+        style={{
+          background: 'var(--color-bg-surface-1)',
+          border: '2px dashed var(--color-border-light)',
+        }}
       >
         <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
           暂无任务
         </p>
       </div>
-    )
+    );
   }
 
   return (
@@ -98,7 +101,7 @@ export default function TableView({
             <th
               className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider"
               style={{
-                background: '#FAF8F5',
+                background: 'var(--color-bg-surface-1)',
                 color: 'var(--color-text-secondary)',
                 borderBottom: '2px solid var(--color-border-light)',
                 minWidth: '40px',
@@ -109,7 +112,7 @@ export default function TableView({
             <th
               className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
               style={{
-                background: '#FAF8F5',
+                background: 'var(--color-bg-surface-1)',
                 color: 'var(--color-text-secondary)',
                 borderBottom: '2px solid var(--color-border-light)',
                 minWidth: '300px',
@@ -124,7 +127,7 @@ export default function TableView({
             <th
               className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
               style={{
-                background: '#FAF8F5',
+                background: 'var(--color-bg-surface-1)',
                 color: 'var(--color-text-secondary)',
                 borderBottom: '2px solid var(--color-border-light)',
                 minWidth: '100px',
@@ -139,7 +142,7 @@ export default function TableView({
             <th
               className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
               style={{
-                background: '#FAF8F5',
+                background: 'var(--color-bg-surface-1)',
                 color: 'var(--color-text-secondary)',
                 borderBottom: '2px solid var(--color-border-light)',
                 minWidth: '80px',
@@ -154,7 +157,7 @@ export default function TableView({
             <th
               className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
               style={{
-                background: '#FAF8F5',
+                background: 'var(--color-bg-surface-1)',
                 color: 'var(--color-text-secondary)',
                 borderBottom: '2px solid var(--color-border-light)',
                 minWidth: '120px',
@@ -169,7 +172,7 @@ export default function TableView({
             <th
               className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
               style={{
-                background: '#FAF8F5',
+                background: 'var(--color-bg-surface-1)',
                 color: 'var(--color-text-secondary)',
                 borderBottom: '2px solid var(--color-border-light)',
                 minWidth: '100px',
@@ -184,7 +187,7 @@ export default function TableView({
             <th
               className="px-3 py-3 text-center text-xs font-semibold uppercase tracking-wider"
               style={{
-                background: '#FAF8F5',
+                background: 'var(--color-bg-surface-1)',
                 color: 'var(--color-text-secondary)',
                 borderBottom: '2px solid var(--color-border-light)',
                 minWidth: '120px',
@@ -228,9 +231,7 @@ export default function TableView({
               <td className="px-3 py-2" onClick={(e) => e.stopPropagation()}>
                 <InlineEdit
                   value={task.status}
-                  onSave={(value) =>
-                    onUpdateTask(task.id, { status: value as TaskStatus })
-                  }
+                  onSave={(value) => onUpdateTask(task.id, { status: value as TaskStatus })}
                   type="status"
                 />
               </td>
@@ -264,8 +265,8 @@ export default function TableView({
                   {task.status !== 'completed' && task.status !== 'archived' && (
                     <button
                       onClick={(e) => {
-                        e.stopPropagation()
-                        onStartTimer(task)
+                        e.stopPropagation();
+                        onStartTimer(task);
                       }}
                       className="p-1.5 rounded-lg transition-all hover:scale-105"
                       style={{ background: 'var(--color-blue)20' }}
@@ -276,8 +277,8 @@ export default function TableView({
                   )}
                   <button
                     onClick={(e) => {
-                      e.stopPropagation()
-                      onDeleteTask(task.id)
+                      e.stopPropagation();
+                      onDeleteTask(task.id);
                     }}
                     className="p-1.5 rounded-lg transition-all hover:scale-105"
                     style={{ background: '#FEF2F2' }}
@@ -292,5 +293,5 @@ export default function TableView({
         </tbody>
       </table>
     </div>
-  )
+  );
 }

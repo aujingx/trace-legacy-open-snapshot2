@@ -1,13 +1,13 @@
 // Focus Settings Section
 
-import { useTranslation } from 'react-i18next'
-import { Section, NumberField } from './components'
-import type { FocusSettings } from '../../store/useAppStore'
+import { useTranslation } from 'react-i18next';
+import { Section, NumberField } from './components';
+import type { FocusSettings } from '../../store/useAppStore';
 
 interface FocusSettingsSectionProps {
-  index: number
-  focusSettings: FocusSettings
-  updateFocusSettings: (updates: Partial<FocusSettings>) => void
+  index: number;
+  focusSettings: FocusSettings;
+  updateFocusSettings: (updates: Partial<FocusSettings>) => void;
 }
 
 export default function FocusSettingsSection({
@@ -15,7 +15,7 @@ export default function FocusSettingsSection({
   focusSettings,
   updateFocusSettings,
 }: FocusSettingsSectionProps) {
-  const { t } = useTranslation()
+  const { t } = useTranslation();
 
   return (
     <Section title={t('settings.sections.focus')} index={index}>
@@ -54,5 +54,5 @@ export default function FocusSettingsSection({
         />
       </div>
     </Section>
-  )
+  );
 }

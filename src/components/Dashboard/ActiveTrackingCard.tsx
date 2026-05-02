@@ -1,9 +1,9 @@
-import { Clock, Activity } from 'lucide-react'
+import { Clock, Activity } from 'lucide-react';
 
 interface Props {
-  currentApp: string
-  duration: number // minutes
-  category: string
+  currentApp: string;
+  duration: number; // minutes
+  category: string;
 }
 
 export default function ActiveTrackingCard({ currentApp, duration, category }: Props) {
@@ -14,7 +14,7 @@ export default function ActiveTrackingCard({ currentApp, duration, category }: P
     { category: 'learning', width: 18 },
     { category: 'other', width: 5 },
     { category: 'work', width: 30 },
-  ]
+  ];
 
   const getCategoryColor = (cat: string) => {
     const colors: Record<string, string> = {
@@ -23,9 +23,9 @@ export default function ActiveTrackingCard({ currentApp, duration, category }: P
       break: 'var(--color-green)',
       learning: 'var(--color-lemon)',
       other: 'var(--color-border-strong)',
-    }
-    return colors[cat] || colors.other
-  }
+    };
+    return colors[cat] || colors.other;
+  };
 
   return (
     <div
@@ -89,7 +89,10 @@ export default function ActiveTrackingCard({ currentApp, duration, category }: P
       </div>
 
       {/* Mini Timeline Preview */}
-      <div className="h-10 rounded-xl flex items-center gap-1 px-2" style={{ background: 'var(--color-bg-surface-2)' }}>
+      <div
+        className="h-10 rounded-xl flex items-center gap-1 px-2"
+        style={{ background: 'var(--color-bg-surface-2)' }}
+      >
         {activityBlocks.map((block, i) => (
           <div
             key={i}
@@ -103,5 +106,5 @@ export default function ActiveTrackingCard({ currentApp, duration, category }: P
         ))}
       </div>
     </div>
-  )
+  );
 }

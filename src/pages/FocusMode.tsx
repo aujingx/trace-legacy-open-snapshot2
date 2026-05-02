@@ -1,30 +1,30 @@
-import { useState, useEffect, useMemo, useCallback } from 'react'
-import { useTranslation } from 'react-i18next'
-import { invoke } from '@tauri-apps/api/core'
-import { Button, Badge, Input, Modal, EmptyState } from '../components/ui'
-import { useAppStore } from '../store/useAppStore'
-import useTheme from '../hooks/useTheme'
-import dataService from '../services/dataService'
-import { PetMiniWidget } from './VirtualPet'
-import { PetDialogue } from '../components/PetDialogue'
-import type { FocusSession } from '../services/dataService'
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
+import { invoke } from '@tauri-apps/api/core';
+import { Button, Badge, Input, Modal, EmptyState } from '../components/ui';
+import { useAppStore } from '../store/useAppStore';
+import useTheme from '../hooks/useTheme';
+import dataService from '../services/dataService';
+import { PetMiniWidget } from './VirtualPet';
+import { PetDialogue } from '../components/PetDialogue';
+import type { FocusSession } from '../services/dataService';
 
 // ── Helpers ──
 
 function todayStr(): string {
-  const d = new Date()
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
 function formatMM_SS(totalSeconds: number): string {
-  const m = Math.floor(totalSeconds / 60)
-  const s = totalSeconds % 60
-  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+  const m = Math.floor(totalSeconds / 60);
+  const s = totalSeconds % 60;
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
 function formatTime(iso: string): string {
-  const d = new Date(iso)
-  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+  const d = new Date(iso);
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
 
 // ── Constants ──
@@ -34,11 +34,11 @@ const STATE_LABELS: Record<string, string> = {
   working: 'focus.working',
   break: 'focus.break',
   longBreak: 'focus.longBreak',
-}
+};
 
-const RING_RADIUS = 90
-const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS
-const SVG_SIZE = 220
+const RING_RADIUS = 90;
+const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
+const SVG_SIZE = 220;
 
 const MOTIVATIONAL_MSGS = [
   '保持专注，你做得很好！',
@@ -49,18 +49,18 @@ const MOTIVATIONAL_MSGS = [
   '专注是最好的投资。',
   '坚持住，休息马上到来。',
   '此刻的努力，未来的回报。',
-]
+];
 
 const AMBIENT_SOUNDS = [
   { id: 'none', labelKey: 'focus.none', icon: '🔇' },
   { id: 'white-noise', labelKey: 'focus.whiteNoise', icon: '📻' },
   { id: 'rain', labelKey: 'focus.rain', icon: '🌧️' },
   { id: 'cafe', labelKey: 'focus.cafe', icon: '☕' },
-] as const
+] as const;
 
-const LS_AMBIENT_KEY = 'trace-ambient-sound'
+const LS_AMBIENT_KEY = 'trace-ambient-sound';
 // Default urgent break threshold if adaptive settings not loaded
-const DEFAULT_URGENT_BREAK_THRESHOLD = 90 * 60 // 90 minutes in seconds — second, more urgent reminder
+const DEFAULT_URGENT_BREAK_THRESHOLD = 90 * 60; // 90 minutes in seconds — second, more urgent reminder
 
 const BREAK_PET_MESSAGES = [
   '休息一下吧！你已经很棒了～',
@@ -69,54 +69,54 @@ const BREAK_PET_MESSAGES = [
   '你的专注力让我佩服！但也要休息呀～',
   '休息是为了走更长的路！',
   '喝杯水，伸个懒腰吧！',
-]
+];
 
 const URGENT_BREAK_PET_MESSAGES = [
   '主人！你已经超时工作了！必须休息！',
   '太久不休息会影响效率的！快停下来！',
   '我都替你累了...拜托休息一下！',
   '健康第一！现在就休息吧！',
-]
+];
 
 function pickBreakMessage(isUrgent: boolean): string {
-  const pool = isUrgent ? URGENT_BREAK_PET_MESSAGES : BREAK_PET_MESSAGES
-  return pool[Math.floor(Math.random() * pool.length)]
+  const pool = isUrgent ? URGENT_BREAK_PET_MESSAGES : BREAK_PET_MESSAGES;
+  return pool[Math.floor(Math.random() * pool.length)];
 }
 
-type TabKey = 'timer' | 'shield'
+type TabKey = 'timer' | 'shield';
 
 // ── FlowBlocks types & helpers ──
 
 interface BlockedSite {
-  id: string
-  domain: string
-  enabled: boolean
+  id: string;
+  domain: string;
+  enabled: boolean;
 }
 
-type ScheduleMode = 'focus' | 'always' | 'custom'
+type ScheduleMode = 'focus' | 'always' | 'custom';
 
-const LS_KEY = 'trace-flow-blocks'
-const LS_SCHEDULE_KEY = 'trace-flow-blocks-schedule'
+const LS_KEY = 'trace-flow-blocks';
+const LS_SCHEDULE_KEY = 'trace-flow-blocks-schedule';
 
 function loadSites(): BlockedSite[] {
   try {
-    const raw = localStorage.getItem(LS_KEY)
-    return raw ? JSON.parse(raw) : defaultSites()
+    const raw = localStorage.getItem(LS_KEY);
+    return raw ? JSON.parse(raw) : defaultSites();
   } catch {
-    return defaultSites()
+    return defaultSites();
   }
 }
 
 function saveSites(sites: BlockedSite[]): void {
-  localStorage.setItem(LS_KEY, JSON.stringify(sites))
+  localStorage.setItem(LS_KEY, JSON.stringify(sites));
 }
 
 function loadSchedule(): ScheduleMode {
-  return (localStorage.getItem(LS_SCHEDULE_KEY) as ScheduleMode) || 'focus'
+  return (localStorage.getItem(LS_SCHEDULE_KEY) as ScheduleMode) || 'focus';
 }
 
 function saveSchedule(mode: ScheduleMode): void {
-  localStorage.setItem(LS_SCHEDULE_KEY, mode)
+  localStorage.setItem(LS_SCHEDULE_KEY, mode);
 }
 
 function defaultSites(): BlockedSite[] {
@@ -126,265 +126,272 @@ function defaultSites(): BlockedSite[] {
     { id: crypto.randomUUID(), domain: 'douyin.com', enabled: true },
     { id: crypto.randomUUID(), domain: 'bilibili.com', enabled: false },
     { id: crypto.randomUUID(), domain: 'zhihu.com', enabled: false },
-  ]
+  ];
 }
 
 const SCHEDULE_OPTIONS: { value: ScheduleMode; labelKey: string; descKey: string }[] = [
   { value: 'focus', labelKey: 'focus.focusOnly', descKey: 'focus.focusOnlyDesc' },
   { value: 'always', labelKey: 'focus.always', descKey: 'focus.alwaysDesc' },
   { value: 'custom', labelKey: 'focus.custom', descKey: 'focus.customDesc' },
-]
+];
 
 // ══════════════════════════════════════════════════
 //  Main Component
 // ══════════════════════════════════════════════════
 
 export default function FocusMode() {
-  const { t } = useTranslation()
-  const { accentColor } = useTheme()
+  const { t } = useTranslation();
+  const { accentColor } = useTheme();
 
   // ── Store ──
-  const focusState = useAppStore((s) => s.focusState)
-  const focusTimeLeft = useAppStore((s) => s.focusTimeLeft)
-  const focusSessions = useAppStore((s) => s.focusSessions)
-  const focusSettings = useAppStore((s) => s.focusSettings)
-  const startFocus = useAppStore((s) => s.startFocus)
-  const pauseFocus = useAppStore((s) => s.pauseFocus)
-  const resetFocus = useAppStore((s) => s.resetFocus)
-  const tickFocus = useAppStore((s) => s.tickFocus)
-  const skipBreak = useAppStore((s) => s.skipBreak)
-  const updateFocusSettings = useAppStore((s) => s.updateFocusSettings)
-  const addToast = useAppStore((s) => s.addToast)
+  const focusState = useAppStore((s) => s.focusState);
+  const focusTimeLeft = useAppStore((s) => s.focusTimeLeft);
+  const focusSessions = useAppStore((s) => s.focusSessions);
+  const focusSettings = useAppStore((s) => s.focusSettings);
+  const startFocus = useAppStore((s) => s.startFocus);
+  const pauseFocus = useAppStore((s) => s.pauseFocus);
+  const resetFocus = useAppStore((s) => s.resetFocus);
+  const tickFocus = useAppStore((s) => s.tickFocus);
+  const skipBreak = useAppStore((s) => s.skipBreak);
+  const updateFocusSettings = useAppStore((s) => s.updateFocusSettings);
+  const addToast = useAppStore((s) => s.addToast);
 
   // ── Local state ──
-  const [activeTab, setActiveTab] = useState<TabKey>('timer')
-  const [showSettings, setShowSettings] = useState(false)
-  const [todaySessions, setTodaySessions] = useState<FocusSession[]>([])
+  const [activeTab, setActiveTab] = useState<TabKey>('timer');
+  const [showSettings, setShowSettings] = useState(false);
+  const [todaySessions, setTodaySessions] = useState<FocusSession[]>([]);
   const [ambientSound, setAmbientSound] = useState<string | null>(() => {
-    try { return localStorage.getItem(LS_AMBIENT_KEY) } catch { return null }
-  })
-  const [motivIdx, setMotivIdx] = useState(0)
-  const [breakReminderDismissed, setBreakReminderDismissed] = useState(false)
-  const [urgentReminderDismissed, setUrgentReminderDismissed] = useState(false)
-  const [continuousFocusSeconds, setContinuousFocusSeconds] = useState(0)
-  const [breakTimerActive, setBreakTimerActive] = useState(false)
-  const [breakTimeLeft, setBreakTimeLeft] = useState(5 * 60) // 5 minutes break
-  const [breakPetMessage, setBreakPetMessage] = useState('')
+    try {
+      return localStorage.getItem(LS_AMBIENT_KEY);
+    } catch {
+      return null;
+    }
+  });
+  const [motivIdx, setMotivIdx] = useState(0);
+  const [breakReminderDismissed, setBreakReminderDismissed] = useState(false);
+  const [urgentReminderDismissed, setUrgentReminderDismissed] = useState(false);
+  const [continuousFocusSeconds, setContinuousFocusSeconds] = useState(0);
+  const [breakTimerActive, setBreakTimerActive] = useState(false);
+  const [breakTimeLeft, setBreakTimeLeft] = useState(5 * 60); // 5 minutes break
+  const [breakPetMessage, setBreakPetMessage] = useState('');
   // Adaptive break reminder settings
-  const [adaptiveBreakEnabled, setAdaptiveBreakEnabled] = useState(true)
-  const [adaptiveUrgentThreshold, setAdaptiveUrgentThreshold] = useState(DEFAULT_URGENT_BREAK_THRESHOLD)
+  const [adaptiveBreakEnabled, setAdaptiveBreakEnabled] = useState(true);
+  const [adaptiveUrgentThreshold, setAdaptiveUrgentThreshold] = useState(
+    DEFAULT_URGENT_BREAK_THRESHOLD
+  );
 
   // ── FlowBlocks state ──
-  const [sites, setSites] = useState<BlockedSite[]>(loadSites)
-  const [schedule, setSchedule] = useState<ScheduleMode>(loadSchedule)
-  const [addOpen, setAddOpen] = useState(false)
-  const [newDomain, setNewDomain] = useState('')
+  const [sites, setSites] = useState<BlockedSite[]>(loadSites);
+  const [schedule, setSchedule] = useState<ScheduleMode>(loadSchedule);
+  const [addOpen, setAddOpen] = useState(false);
+  const [newDomain, setNewDomain] = useState('');
 
   // ── Load adaptive break settings ──
   useEffect(() => {
     const loadAdaptiveSettings = async () => {
-      const settings = await dataService.getSettings()
-      setAdaptiveBreakEnabled(settings.adaptiveBreakReminders ?? true)
-      setAdaptiveUrgentThreshold((settings.adaptiveBreakUrgentThreshold ?? 90) * 60)
-    }
-    loadAdaptiveSettings()
-  }, [])
+      const settings = await dataService.getSettings();
+      setAdaptiveBreakEnabled(settings.adaptiveBreakReminders ?? true);
+      setAdaptiveUrgentThreshold((settings.adaptiveBreakUrgentThreshold ?? 90) * 60);
+    };
+    loadAdaptiveSettings();
+  }, []);
 
   // ── Tick interval ──
   useEffect(() => {
-    if (focusState === 'idle') return
-    const id = setInterval(() => tickFocus(), 1000)
-    return () => clearInterval(id)
-  }, [focusState, tickFocus])
+    if (focusState === 'idle') return;
+    const id = setInterval(() => tickFocus(), 1000);
+    return () => clearInterval(id);
+  }, [focusState, tickFocus]);
 
   // ── Load today sessions ──
   useEffect(() => {
     async function loadTodaySessions() {
-      const allSessions = await dataService.getFocusSessions(todayStr())
-      setTodaySessions(allSessions.filter((s: FocusSession) => s.type === 'work' && s.completed))
+      const allSessions = await dataService.getFocusSessions(todayStr());
+      setTodaySessions(allSessions.filter((s: FocusSession) => s.type === 'work' && s.completed));
     }
-    loadTodaySessions()
-  }, [focusSessions])
+    loadTodaySessions();
+  }, [focusSessions]);
 
   // ── Rotate motivational message every 30s ──
   useEffect(() => {
-    if (focusState !== 'working') return
-    const id = setInterval(() => setMotivIdx((i) => (i + 1) % MOTIVATIONAL_MSGS.length), 30000)
-    return () => clearInterval(id)
-  }, [focusState])
+    if (focusState !== 'working') return;
+    const id = setInterval(() => setMotivIdx((i) => (i + 1) % MOTIVATIONAL_MSGS.length), 30000);
+    return () => clearInterval(id);
+  }, [focusState]);
 
   // ── Track continuous focus time for break reminder ──
   useEffect(() => {
     if (focusState !== 'working') {
-      setContinuousFocusSeconds(0)
-      setBreakReminderDismissed(false)
-      setUrgentReminderDismissed(false)
-      return
+      setContinuousFocusSeconds(0);
+      setBreakReminderDismissed(false);
+      setUrgentReminderDismissed(false);
+      return;
     }
-    const id = setInterval(() => setContinuousFocusSeconds((s) => s + 1), 1000)
-    return () => clearInterval(id)
-  }, [focusState])
+    const id = setInterval(() => setContinuousFocusSeconds((s) => s + 1), 1000);
+    return () => clearInterval(id);
+  }, [focusState]);
 
   // Break reminder threshold = user-configured workMinutes
-  const breakReminderThreshold = focusSettings.workMinutes * 60
+  const breakReminderThreshold = focusSettings.workMinutes * 60;
 
   // Show first reminder at workMinutes, second (urgent) at 50 min
   const showBreakReminderModal =
     focusState === 'working' &&
     continuousFocusSeconds >= breakReminderThreshold &&
     !breakReminderDismissed &&
-    !breakTimerActive
+    !breakTimerActive;
 
   const showUrgentBreakReminderModal =
     focusState === 'working' &&
-    continuousFocusSeconds >= (adaptiveBreakEnabled ? adaptiveUrgentThreshold : DEFAULT_URGENT_BREAK_THRESHOLD) &&
+    continuousFocusSeconds >=
+      (adaptiveBreakEnabled ? adaptiveUrgentThreshold : DEFAULT_URGENT_BREAK_THRESHOLD) &&
     !urgentReminderDismissed &&
     breakReminderDismissed && // only show after first was dismissed
-    !breakTimerActive
+    !breakTimerActive;
 
   // Generate pet message when modal opens
   useEffect(() => {
     if (showBreakReminderModal || showUrgentBreakReminderModal) {
-      setBreakPetMessage(pickBreakMessage(showUrgentBreakReminderModal))
+      setBreakPetMessage(pickBreakMessage(showUrgentBreakReminderModal));
     }
-  }, [showBreakReminderModal, showUrgentBreakReminderModal])
+  }, [showBreakReminderModal, showUrgentBreakReminderModal]);
 
   // Break timer countdown
   useEffect(() => {
-    if (!breakTimerActive) return
+    if (!breakTimerActive) return;
     if (breakTimeLeft <= 0) {
-      setBreakTimerActive(false)
-      setBreakTimeLeft(5 * 60)
-      addToast('success', '休息结束！继续加油吧~')
-      return
+      setBreakTimerActive(false);
+      setBreakTimeLeft(5 * 60);
+      addToast('success', '休息结束！继续加油吧~');
+      return;
     }
-    const id = setInterval(() => setBreakTimeLeft((t) => t - 1), 1000)
-    return () => clearInterval(id)
-  }, [breakTimerActive, breakTimeLeft, addToast])
+    const id = setInterval(() => setBreakTimeLeft((t) => t - 1), 1000);
+    return () => clearInterval(id);
+  }, [breakTimerActive, breakTimeLeft, addToast]);
 
   // Handlers for break reminder modal
   const handleTakeBreak = useCallback(() => {
-    pauseFocus()
-    setBreakTimerActive(true)
-    setBreakTimeLeft(5 * 60)
-    setBreakReminderDismissed(true)
-    setUrgentReminderDismissed(true)
-  }, [pauseFocus])
+    pauseFocus();
+    setBreakTimerActive(true);
+    setBreakTimeLeft(5 * 60);
+    setBreakReminderDismissed(true);
+    setUrgentReminderDismissed(true);
+  }, [pauseFocus]);
 
   const handleContinueFocus = useCallback(() => {
     if (showUrgentBreakReminderModal) {
-      setUrgentReminderDismissed(true)
+      setUrgentReminderDismissed(true);
     } else {
-      setBreakReminderDismissed(true)
+      setBreakReminderDismissed(true);
     }
-  }, [showUrgentBreakReminderModal])
+  }, [showUrgentBreakReminderModal]);
 
   const handleEndSession = useCallback(() => {
-    resetFocus()
-    setBreakReminderDismissed(true)
-    setUrgentReminderDismissed(true)
-  }, [resetFocus])
+    resetFocus();
+    setBreakReminderDismissed(true);
+    setUrgentReminderDismissed(true);
+  }, [resetFocus]);
 
   // ── Persist ambient sound selection ──
   const handleAmbientChange = useCallback((id: string | null) => {
-    setAmbientSound(id)
+    setAmbientSound(id);
     try {
-      if (id) localStorage.setItem(LS_AMBIENT_KEY, id)
-      else localStorage.removeItem(LS_AMBIENT_KEY)
-    } catch { /* noop */ }
-  }, [])
+      if (id) localStorage.setItem(LS_AMBIENT_KEY, id);
+      else localStorage.removeItem(LS_AMBIENT_KEY);
+    } catch {
+      /* noop */
+    }
+  }, []);
 
   // ── Progress ──
   const totalSeconds = useMemo(() => {
-    if (focusState === 'working') return focusSettings.workMinutes * 60
-    if (focusState === 'break') return focusSettings.breakMinutes * 60
-    if (focusState === 'longBreak') return focusSettings.longBreakMinutes * 60
-    return focusSettings.workMinutes * 60
-  }, [focusState, focusSettings])
+    if (focusState === 'working') return focusSettings.workMinutes * 60;
+    if (focusState === 'break') return focusSettings.breakMinutes * 60;
+    if (focusState === 'longBreak') return focusSettings.longBreakMinutes * 60;
+    return focusSettings.workMinutes * 60;
+  }, [focusState, focusSettings]);
 
-  const progress = totalSeconds > 0 ? 1 - focusTimeLeft / totalSeconds : 0
-  const dashOffset = RING_CIRCUMFERENCE * (1 - progress)
-  const isActive = focusState === 'working' || focusState === 'break' || focusState === 'longBreak'
-  const isBreak = focusState === 'break' || focusState === 'longBreak'
-  const isBlocking = focusState === 'working'
+  const progress = totalSeconds > 0 ? 1 - focusTimeLeft / totalSeconds : 0;
+  const dashOffset = RING_CIRCUMFERENCE * (1 - progress);
+  const isActive = focusState === 'working' || focusState === 'break' || focusState === 'longBreak';
+  const isBreak = focusState === 'break' || focusState === 'longBreak';
+  const isBlocking = focusState === 'working';
 
   const ringColor =
     focusState === 'working'
       ? accentColor
       : isBreak
         ? 'var(--color-success, #22c55e)'
-        : 'var(--color-text-muted)'
+        : 'var(--color-text-muted)';
 
-  const completedSessions = todaySessions.length
-  const totalDots = Math.max(focusSettings.longBreakInterval, completedSessions + (isActive && !isBreak ? 1 : 0))
+  const completedSessions = todaySessions.length;
+  const totalDots = Math.max(
+    focusSettings.longBreakInterval,
+    completedSessions + (isActive && !isBreak ? 1 : 0)
+  );
 
   const bgClass =
-    focusState === 'working'
-      ? 'focus-bg-warm'
-      : isBreak
-        ? 'focus-bg-cool'
-        : 'focus-bg-idle'
+    focusState === 'working' ? 'focus-bg-warm' : isBreak ? 'focus-bg-cool' : 'focus-bg-idle';
 
-  const center = SVG_SIZE / 2
+  const center = SVG_SIZE / 2;
 
   // ── FlowBlocks CRUD ──
   const persist = useCallback((next: BlockedSite[]) => {
-    setSites(next)
-    saveSites(next)
-  }, [])
+    setSites(next);
+    saveSites(next);
+  }, []);
 
   const handleAdd = useCallback(() => {
-    let domain = newDomain.trim().toLowerCase()
-    if (!domain) return
-    domain = domain.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0]
+    let domain = newDomain.trim().toLowerCase();
+    if (!domain) return;
+    domain = domain
+      .replace(/^https?:\/\//, '')
+      .replace(/^www\./, '')
+      .split('/')[0];
     if (sites.some((s) => s.domain === domain)) {
-      addToast('warning', '该域名已存在')
-      return
+      addToast('warning', '该域名已存在');
+      return;
     }
-    const entry: BlockedSite = { id: crypto.randomUUID(), domain, enabled: true }
-    persist([...sites, entry])
-    setNewDomain('')
-    setAddOpen(false)
-    addToast('success', `已添加 ${domain}`)
-  }, [newDomain, sites, persist, addToast])
+    const entry: BlockedSite = { id: crypto.randomUUID(), domain, enabled: true };
+    persist([...sites, entry]);
+    setNewDomain('');
+    setAddOpen(false);
+    addToast('success', `已添加 ${domain}`);
+  }, [newDomain, sites, persist, addToast]);
 
   const handleToggle = useCallback(
     (id: string) => {
-      persist(sites.map((s) => (s.id === id ? { ...s, enabled: !s.enabled } : s)))
+      persist(sites.map((s) => (s.id === id ? { ...s, enabled: !s.enabled } : s)));
     },
-    [sites, persist],
-  )
+    [sites, persist]
+  );
 
   const handleDelete = useCallback(
     (id: string) => {
-      persist(sites.filter((s) => s.id !== id))
-      addToast('info', '已删除')
+      persist(sites.filter((s) => s.id !== id));
+      addToast('info', '已删除');
     },
-    [sites, persist, addToast],
-  )
+    [sites, persist, addToast]
+  );
 
-  const handleScheduleChange = useCallback(
-    (mode: ScheduleMode) => {
-      setSchedule(mode)
-      saveSchedule(mode)
-    },
-    [],
-  )
+  const handleScheduleChange = useCallback((mode: ScheduleMode) => {
+    setSchedule(mode);
+    saveSchedule(mode);
+  }, []);
 
-  const enabledCount = sites.filter((s) => s.enabled).length
+  const enabledCount = sites.filter((s) => s.enabled).length;
 
   // ── Sync blocked sites to backend ──
   useEffect(() => {
-    const enabledDomains = sites
-      .filter(s => s.enabled)
-      .map(s => s.domain);
+    const enabledDomains = sites.filter((s) => s.enabled).map((s) => s.domain);
 
     // Only send to backend in Tauri desktop app
     if ((window as any).__TAURI__) {
-      invoke('update_blocked_sites', { domains: enabledDomains, schedule_mode: schedule })
-        .catch(err => {
+      invoke('update_blocked_sites', { domains: enabledDomains, schedule_mode: schedule }).catch(
+        (err) => {
           console.error('Failed to update blocked sites:', err);
-        });
+        }
+      );
     }
   }, [sites, schedule]);
 
@@ -394,21 +401,19 @@ export default function FocusMode() {
 
     if (focusState === 'working') {
       // Enable blocking when focus starts
-      invoke('enable_focus_blocking')
-        .catch(err => {
-          console.error('Failed to enable focus blocking:', err);
-        });
+      invoke('enable_focus_blocking').catch((err) => {
+        console.error('Failed to enable focus blocking:', err);
+      });
     } else {
       // Disable blocking when focus ends
-      invoke('disable_focus_blocking')
-        .catch(err => {
-          console.error('Failed to disable focus blocking:', err);
-        });
+      invoke('disable_focus_blocking').catch((err) => {
+        console.error('Failed to disable focus blocking:', err);
+      });
     }
   }, [focusState]);
 
   // ── Computed stats ──
-  const totalFocusToday = todaySessions.reduce((sum, s) => sum + s.duration, 0)
+  const totalFocusToday = todaySessions.reduce((sum, s) => sum + s.duration, 0);
 
   return (
     <>
@@ -441,7 +446,10 @@ export default function FocusMode() {
           <div className="flex-1 flex flex-col items-center justify-center px-4 select-none pb-6">
             {/* ── Motivational message ── */}
             {focusState === 'working' && (
-              <p className="motiv-msg text-xs text-[var(--color-text-muted)] mb-4 text-center" style={{ letterSpacing: '0.05em' }}>
+              <p
+                className="motiv-msg text-xs text-[var(--color-text-muted)] mb-4 text-center"
+                style={{ letterSpacing: '0.05em' }}
+              >
                 {MOTIVATIONAL_MSGS[motivIdx]}
               </p>
             )}
@@ -451,8 +459,10 @@ export default function FocusMode() {
               <div
                 className="w-full max-w-md mb-4 px-5 py-4 rounded-2xl text-center break-reminder-enter"
                 style={{
-                  background: 'linear-gradient(135deg, color-mix(in srgb, var(--color-success, #22c55e) 12%, transparent), color-mix(in srgb, var(--color-success, #22c55e) 6%, transparent))',
-                  border: '1px solid color-mix(in srgb, var(--color-success, #22c55e) 25%, transparent)',
+                  background:
+                    'linear-gradient(135deg, color-mix(in srgb, var(--color-success, #22c55e) 12%, transparent), color-mix(in srgb, var(--color-success, #22c55e) 6%, transparent))',
+                  border:
+                    '1px solid color-mix(in srgb, var(--color-success, #22c55e) 25%, transparent)',
                 }}
               >
                 <span style={{ fontSize: 24 }}>🧘</span>
@@ -462,11 +472,21 @@ export default function FocusMode() {
                 <p className="text-2xl font-bold tabular-nums text-[var(--color-text-primary)] mt-1">
                   {formatMM_SS(breakTimeLeft)}
                 </p>
-                <p className="text-[12px] text-[var(--color-text-muted)] mt-1">{t('focus.breakHint')}</p>
+                <p className="text-[12px] text-[var(--color-text-muted)] mt-1">
+                  {t('focus.breakHint')}
+                </p>
                 <button
-                  onClick={() => { setBreakTimerActive(false); setBreakTimeLeft(5 * 60); startFocus() }}
+                  onClick={() => {
+                    setBreakTimerActive(false);
+                    setBreakTimeLeft(5 * 60);
+                    startFocus();
+                  }}
                   className="mt-3 px-4 py-1.5 rounded-full text-[12px] font-medium transition-all"
-                  style={{ background: 'var(--color-bg-surface-2)', color: 'var(--color-text-secondary)', border: '1px solid var(--color-border-subtle)' }}
+                  style={{
+                    background: 'var(--color-bg-surface-2)',
+                    color: 'var(--color-text-secondary)',
+                    border: '1px solid var(--color-border-subtle)',
+                  }}
                 >
                   {t('focus.skipBreak')}
                 </button>
@@ -488,20 +508,41 @@ export default function FocusMode() {
                 <div
                   className={`absolute rounded-full ${focusState === 'working' ? 'focus-glow-breathe' : ''}`}
                   style={{
-                    width: SVG_SIZE + 60, height: SVG_SIZE + 60,
+                    width: SVG_SIZE + 60,
+                    height: SVG_SIZE + 60,
                     background: `radial-gradient(circle, ${ringColor} 0%, transparent 70%)`,
-                    opacity: 0.15, filter: 'blur(30px)',
+                    opacity: 0.15,
+                    filter: 'blur(30px)',
                     transition: 'background 0.8s ease, opacity 0.8s ease',
                   }}
                 />
 
                 {/* SVG ring */}
-                <svg width={SVG_SIZE} height={SVG_SIZE} viewBox={`0 0 ${SVG_SIZE} ${SVG_SIZE}`} className="relative z-10">
-                  <circle cx={center} cy={center} r={RING_RADIUS} fill="none" stroke="var(--color-border-subtle)" strokeWidth="6" opacity="0.2" />
+                <svg
+                  width={SVG_SIZE}
+                  height={SVG_SIZE}
+                  viewBox={`0 0 ${SVG_SIZE} ${SVG_SIZE}`}
+                  className="relative z-10"
+                >
                   <circle
-                    cx={center} cy={center} r={RING_RADIUS} fill="none"
-                    stroke={ringColor} strokeWidth="6" strokeLinecap="round"
-                    strokeDasharray={RING_CIRCUMFERENCE} strokeDashoffset={dashOffset}
+                    cx={center}
+                    cy={center}
+                    r={RING_RADIUS}
+                    fill="none"
+                    stroke="var(--color-border-subtle)"
+                    strokeWidth="6"
+                    opacity="0.2"
+                  />
+                  <circle
+                    cx={center}
+                    cy={center}
+                    r={RING_RADIUS}
+                    fill="none"
+                    stroke={ringColor}
+                    strokeWidth="6"
+                    strokeLinecap="round"
+                    strokeDasharray={RING_CIRCUMFERENCE}
+                    strokeDashoffset={dashOffset}
                     transform={`rotate(-90 ${center} ${center})`}
                     className="transition-[stroke-dashoffset] duration-1000 ease-linear"
                   />
@@ -517,7 +558,12 @@ export default function FocusMode() {
                   </span>
                   <span
                     className="mt-2 text-[var(--color-text-muted)]"
-                    style={{ fontSize: 11, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.18em' }}
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 500,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.18em',
+                    }}
                   >
                     {t(STATE_LABELS[focusState])}
                   </span>
@@ -528,8 +574,10 @@ export default function FocusMode() {
                         key={i}
                         className="block rounded-full transition-colors duration-300"
                         style={{
-                          width: 6, height: 6,
-                          backgroundColor: i < completedSessions ? accentColor : 'var(--color-border-subtle)',
+                          width: 6,
+                          height: 6,
+                          backgroundColor:
+                            i < completedSessions ? accentColor : 'var(--color-border-subtle)',
                         }}
                       />
                     ))}
@@ -541,24 +589,47 @@ export default function FocusMode() {
             {/* ── Controls ── */}
             <div className="flex items-center gap-3 mb-6">
               {!isActive && (
-                <Button size="lg" onClick={() => startFocus()} className="!h-14 !px-10 !text-base !rounded-full focus-btn-start">
+                <Button
+                  size="lg"
+                  onClick={() => startFocus()}
+                  className="!h-14 !px-10 !text-base !rounded-full focus-btn-start"
+                >
                   {t('focus.start')}
                 </Button>
               )}
               {isActive && !isBreak && (
-                <Button size="md" variant="secondary" onClick={pauseFocus} className="active:!scale-95">{t('focus.pause')}</Button>
+                <Button
+                  size="md"
+                  variant="secondary"
+                  onClick={pauseFocus}
+                  className="active:!scale-95"
+                >
+                  {t('focus.pause')}
+                </Button>
               )}
               {isBreak && (
-                <Button size="md" variant="ghost" onClick={skipBreak} className="active:!scale-95">{t('focus.skipBreak')}</Button>
+                <Button size="md" variant="ghost" onClick={skipBreak} className="active:!scale-95">
+                  {t('focus.skipBreak')}
+                </Button>
               )}
               {isActive && (
-                <Button size="md" variant="secondary" onClick={resetFocus} className="active:!scale-95">{t('focus.reset')}</Button>
+                <Button
+                  size="md"
+                  variant="secondary"
+                  onClick={resetFocus}
+                  className="active:!scale-95"
+                >
+                  {t('focus.reset')}
+                </Button>
               )}
             </div>
 
             {/* ── Ambient sounds ── */}
             <div className="flex items-center gap-2 mb-5">
-              <span className="text-[10px] text-[var(--color-text-muted)] uppercase mr-1" style={{ letterSpacing: '0.1em' }}>
+              <span
+                className="text-[10px] text-[var(--color-text-muted)] uppercase mr-1"
+                style={{ letterSpacing: '0.1em' }}
+              >
                 {t('focus.ambientSound')}
               </span>
               {AMBIENT_SOUNDS.map((s) => (
@@ -594,10 +665,42 @@ export default function FocusMode() {
               >
                 <h3 className="text-sm font-semibold mb-3">{t('focus.settings')}</h3>
                 <div className="grid grid-cols-2 gap-x-5 gap-y-4">
-                  <SliderSetting label={t('focus.workMinutes')} value={focusSettings.workMinutes} min={15} max={60} step={5} unit={t('common.minutes')} onChange={(v) => updateFocusSettings({ workMinutes: v })} />
-                  <SliderSetting label={t('focus.breakMinutes')} value={focusSettings.breakMinutes} min={3} max={15} step={1} unit={t('common.minutes')} onChange={(v) => updateFocusSettings({ breakMinutes: v })} />
-                  <SliderSetting label={t('focus.longBreakMinutes')} value={focusSettings.longBreakMinutes} min={10} max={30} step={5} unit={t('common.minutes')} onChange={(v) => updateFocusSettings({ longBreakMinutes: v })} />
-                  <SliderSetting label={t('focus.longBreakInterval')} value={focusSettings.longBreakInterval} min={2} max={8} step={1} unit={t('focus.sessions')} onChange={(v) => updateFocusSettings({ longBreakInterval: v })} />
+                  <SliderSetting
+                    label={t('focus.workMinutes')}
+                    value={focusSettings.workMinutes}
+                    min={15}
+                    max={60}
+                    step={5}
+                    unit={t('common.minutes')}
+                    onChange={(v) => updateFocusSettings({ workMinutes: v })}
+                  />
+                  <SliderSetting
+                    label={t('focus.breakMinutes')}
+                    value={focusSettings.breakMinutes}
+                    min={3}
+                    max={15}
+                    step={1}
+                    unit={t('common.minutes')}
+                    onChange={(v) => updateFocusSettings({ breakMinutes: v })}
+                  />
+                  <SliderSetting
+                    label={t('focus.longBreakMinutes')}
+                    value={focusSettings.longBreakMinutes}
+                    min={10}
+                    max={30}
+                    step={5}
+                    unit={t('common.minutes')}
+                    onChange={(v) => updateFocusSettings({ longBreakMinutes: v })}
+                  />
+                  <SliderSetting
+                    label={t('focus.longBreakInterval')}
+                    value={focusSettings.longBreakInterval}
+                    min={2}
+                    max={8}
+                    step={1}
+                    unit={t('focus.sessions')}
+                    onChange={(v) => updateFocusSettings({ longBreakInterval: v })}
+                  />
                 </div>
               </div>
             )}
@@ -606,13 +709,27 @@ export default function FocusMode() {
             {todaySessions.length > 0 && (
               <div className="flex items-center gap-6 mb-4 text-center">
                 <div>
-                  <span className="text-2xl font-bold text-[var(--color-text-primary)]">{todaySessions.length}</span>
-                  <p className="text-[10px] text-[var(--color-text-muted)] mt-0.5 uppercase" style={{ letterSpacing: '0.1em' }}>{t('focus.completedSessions')}</p>
+                  <span className="text-2xl font-bold text-[var(--color-text-primary)]">
+                    {todaySessions.length}
+                  </span>
+                  <p
+                    className="text-[10px] text-[var(--color-text-muted)] mt-0.5 uppercase"
+                    style={{ letterSpacing: '0.1em' }}
+                  >
+                    {t('focus.completedSessions')}
+                  </p>
                 </div>
                 <div style={{ width: 1, height: 28, background: 'var(--color-border-subtle)' }} />
                 <div>
-                  <span className="text-2xl font-bold text-[var(--color-text-primary)]">{totalFocusToday}</span>
-                  <p className="text-[10px] text-[var(--color-text-muted)] mt-0.5 uppercase" style={{ letterSpacing: '0.1em' }}>{t('focus.totalFocusTime')}</p>
+                  <span className="text-2xl font-bold text-[var(--color-text-primary)]">
+                    {totalFocusToday}
+                  </span>
+                  <p
+                    className="text-[10px] text-[var(--color-text-muted)] mt-0.5 uppercase"
+                    style={{ letterSpacing: '0.1em' }}
+                  >
+                    {t('focus.totalFocusTime')}
+                  </p>
                 </div>
               </div>
             )}
@@ -622,7 +739,12 @@ export default function FocusMode() {
               <div className="w-full max-w-md mb-4">
                 <h3
                   className="text-[var(--color-text-muted)] mb-2"
-                  style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.14em' }}
+                  style={{
+                    fontSize: 10,
+                    fontWeight: 600,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.14em',
+                  }}
                 >
                   {t('focus.todaysSessions')}
                 </h3>
@@ -637,8 +759,13 @@ export default function FocusMode() {
                         border: `1px solid color-mix(in srgb, ${accentColor} 25%, transparent)`,
                       }}
                     >
-                      <span className="text-[10px] text-[var(--color-text-muted)]">{formatTime(s.startTime)}</span>
-                      <span className="text-xs font-semibold text-[var(--color-text-primary)] mt-0.5">{s.duration}{t('common.minutes')}</span>
+                      <span className="text-[10px] text-[var(--color-text-muted)]">
+                        {formatTime(s.startTime)}
+                      </span>
+                      <span className="text-xs font-semibold text-[var(--color-text-primary)] mt-0.5">
+                        {s.duration}
+                        {t('common.minutes')}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -659,13 +786,23 @@ export default function FocusMode() {
             {/* ── Header ── */}
             <div className="flex items-start justify-between">
               <div>
-                <h2 className="text-2xl font-bold text-[var(--color-text-primary)] mb-1">{t('focus.shield')}</h2>
+                <h2 className="text-2xl font-bold text-[var(--color-text-primary)] mb-1">
+                  {t('focus.shield')}
+                </h2>
                 <p className="text-sm text-[var(--color-text-muted)]">
                   {t('focus.shieldDescription')}
                 </p>
               </div>
               <button className="fb-add-btn" onClick={() => setAddOpen(true)}>
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 14 14"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                >
                   <path d="M7 1v12M1 7h12" />
                 </svg>
                 {t('focus.addSite')}
@@ -680,7 +817,8 @@ export default function FocusMode() {
                     <div
                       className="rounded-full"
                       style={{
-                        width: 14, height: 14,
+                        width: 14,
+                        height: 14,
                         background: isBlocking ? '#48bb78' : 'var(--color-border-subtle)',
                         boxShadow: isBlocking ? '0 0 0 3px rgba(72, 187, 120, 0.2)' : 'none',
                         transition: 'all 0.3s ease',
@@ -693,7 +831,9 @@ export default function FocusMode() {
                       {isBlocking ? t('focus.blocking') : t('focus.inactive')}
                     </p>
                     <p className="text-sm text-[var(--color-text-muted)]">
-                      {isBlocking ? t('focus.blockingCount', { count: enabledCount }) : t('focus.activateOnFocusStart')}
+                      {isBlocking
+                        ? t('focus.blockingCount', { count: enabledCount })
+                        : t('focus.activateOnFocusStart')}
                     </p>
                   </div>
                 </div>
@@ -701,15 +841,21 @@ export default function FocusMode() {
                   <div className="flex gap-4" style={{ marginRight: 8 }}>
                     <div className="text-center">
                       <span className="fb-metric-value text-xl">{enabledCount}</span>
-                      <p className="text-xs text-[var(--color-text-muted)] mt-0.5">{t('focus.enabled')}</p>
+                      <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
+                        {t('focus.enabled')}
+                      </p>
                     </div>
                     <div className="text-center">
                       <span className="fb-metric-value text-xl">{todaySessions.length}</span>
-                      <p className="text-xs text-[var(--color-text-muted)] mt-0.5">{t('focus.blockedToday')}</p>
+                      <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
+                        {t('focus.blockedToday')}
+                      </p>
                     </div>
                     <div className="text-center">
                       <span className="fb-metric-value text-xl">{totalFocusToday}</span>
-                      <p className="text-xs text-[var(--color-text-muted)] mt-0.5">{t('focus.minutesSaved')}</p>
+                      <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
+                        {t('focus.minutesSaved')}
+                      </p>
                     </div>
                   </div>
                   <Badge variant={isBlocking ? 'success' : 'default'} size="md">
@@ -732,12 +878,21 @@ export default function FocusMode() {
 
               {sites.length === 0 ? (
                 <div className="py-10 text-center">
-                  <div className="text-5xl mb-3" style={{ filter: 'drop-shadow(0 4px 8px rgba(44, 24, 16, 0.1))' }}>🛡️</div>
-                  <h4 className="text-base font-semibold text-[var(--color-text-primary)] mb-1">{t('focus.noBlockRules')}</h4>
+                  <div
+                    className="text-5xl mb-3"
+                    style={{ filter: 'drop-shadow(0 4px 8px rgba(44, 24, 16, 0.1))' }}
+                  >
+                    🛡️
+                  </div>
+                  <h4 className="text-base font-semibold text-[var(--color-text-primary)] mb-1">
+                    {t('focus.noBlockRules')}
+                  </h4>
                   <p className="text-sm text-[var(--color-text-muted)] mb-4">
                     {t('focus.noBlockRulesHint')}
                   </p>
-                  <button className="fb-add-btn" onClick={() => setAddOpen(true)}>{t('focus.addSite')}</button>
+                  <button className="fb-add-btn" onClick={() => setAddOpen(true)}>
+                    {t('focus.addSite')}
+                  </button>
                 </div>
               ) : (
                 <div>
@@ -748,13 +903,16 @@ export default function FocusMode() {
                         className={[
                           'fb-site-row flex items-center justify-between px-4 py-3',
                           !site.enabled && 'opacity-50',
-                        ].filter(Boolean).join(' ')}
+                        ]
+                          .filter(Boolean)
+                          .join(' ')}
                       >
                         <div className="flex items-center gap-3 min-w-0">
                           <span
                             className="flex items-center justify-center rounded-lg text-sm"
                             style={{
-                              width: 32, height: 32,
+                              width: 32,
+                              height: 32,
                               background: site.enabled
                                 ? 'linear-gradient(135deg, rgba(254,248,240,1) 0%, rgba(253,242,230,1) 100%)'
                                 : 'rgba(44, 24, 16, 0.04)',
@@ -763,7 +921,9 @@ export default function FocusMode() {
                           >
                             🌐
                           </span>
-                          <span className="text-sm font-medium text-[var(--color-text-primary)] truncate">{site.domain}</span>
+                          <span className="text-sm font-medium text-[var(--color-text-primary)] truncate">
+                            {site.domain}
+                          </span>
                         </div>
                         <div className="flex items-center gap-3 shrink-0">
                           <button
@@ -778,7 +938,15 @@ export default function FocusMode() {
                             className="p-1.5 rounded-lg text-[var(--color-text-muted)] hover:text-red-500 hover:bg-red-500/10 transition-colors cursor-pointer"
                             aria-label="删除"
                           >
-                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                            <svg
+                              width="14"
+                              height="14"
+                              viewBox="0 0 14 14"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                            >
                               <path d="M3 3l8 8M11 3l-8 8" />
                             </svg>
                           </button>
@@ -792,10 +960,12 @@ export default function FocusMode() {
 
             {/* ── Schedule ── */}
             <div className="fb-warm-card p-5">
-              <h3 className="text-sm font-semibold text-[var(--color-text-primary)] mb-4">{t('focus.scheduleMode')}</h3>
+              <h3 className="text-sm font-semibold text-[var(--color-text-primary)] mb-4">
+                {t('focus.scheduleMode')}
+              </h3>
               <div className="space-y-2">
                 {SCHEDULE_OPTIONS.map((opt) => {
-                  const selected = schedule === opt.value
+                  const selected = schedule === opt.value;
                   return (
                     <button
                       key={opt.value}
@@ -803,17 +973,21 @@ export default function FocusMode() {
                       className={[
                         'fb-schedule-opt w-full flex items-center gap-3 px-4 py-3.5 text-left cursor-pointer',
                         selected && 'selected',
-                      ].filter(Boolean).join(' ')}
+                      ]
+                        .filter(Boolean)
+                        .join(' ')}
                     >
                       <div className={`fb-radio-outer ${selected ? 'selected' : ''}`}>
                         <div className="fb-radio-inner" />
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-[var(--color-text-primary)]">{t(opt.labelKey)}</p>
+                        <p className="text-sm font-medium text-[var(--color-text-primary)]">
+                          {t(opt.labelKey)}
+                        </p>
                         <p className="text-xs text-[var(--color-text-muted)]">{t(opt.descKey)}</p>
                       </div>
                     </button>
-                  )
+                  );
                 })}
               </div>
             </div>
@@ -822,13 +996,13 @@ export default function FocusMode() {
             <div
               className="text-center py-3 px-4"
               style={{
-                background: 'linear-gradient(135deg, rgba(254,248,240,0.5) 0%, rgba(253,242,230,0.3) 100%)',
-                borderRadius: 16, border: '1px dashed rgba(44, 24, 16, 0.08)',
+                background:
+                  'linear-gradient(135deg, rgba(254,248,240,0.5) 0%, rgba(253,242,230,0.3) 100%)',
+                borderRadius: 16,
+                border: '1px dashed rgba(44, 24, 16, 0.08)',
               }}
             >
-              <p className="text-xs text-[var(--color-text-muted)]">
-                {t('focus.desktopNote')}
-              </p>
+              <p className="text-xs text-[var(--color-text-muted)]">{t('focus.desktopNote')}</p>
             </div>
           </div>
         )}
@@ -837,12 +1011,22 @@ export default function FocusMode() {
       {/* ── Add site modal ── */}
       <Modal
         isOpen={addOpen}
-        onClose={() => { setAddOpen(false); setNewDomain('') }}
+        onClose={() => {
+          setAddOpen(false);
+          setNewDomain('');
+        }}
         title={t('focus.addBlockedSite')}
         size="sm"
         footer={
           <>
-            <Button variant="ghost" size="sm" onClick={() => { setAddOpen(false); setNewDomain('') }}>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setAddOpen(false);
+                setNewDomain('');
+              }}
+            >
               {t('common.cancel')}
             </Button>
             <Button variant="primary" size="sm" onClick={handleAdd} disabled={!newDomain.trim()}>
@@ -857,16 +1041,16 @@ export default function FocusMode() {
           onChange={setNewDomain}
           placeholder={t('focus.domainPlaceholder')}
         />
-        <p className="text-xs text-[var(--color-text-muted)] mt-2">
-          {t('focus.domainHint')}
-        </p>
+        <p className="text-xs text-[var(--color-text-muted)] mt-2">{t('focus.domainHint')}</p>
       </Modal>
 
       {/* ── Break Reminder Modal ── */}
       <Modal
         isOpen={showBreakReminderModal || showUrgentBreakReminderModal}
         onClose={handleContinueFocus}
-        title={showUrgentBreakReminderModal ? t('focus.urgentBreakReminder') : t('focus.breakReminder')}
+        title={
+          showUrgentBreakReminderModal ? t('focus.urgentBreakReminder') : t('focus.breakReminder')
+        }
         size="sm"
       >
         <div className="text-center py-2">
@@ -943,15 +1127,27 @@ export default function FocusMode() {
         </div>
       </Modal>
     </>
-  )
+  );
 }
 
 // ── Slider sub-component ──
 
 function SliderSetting({
-  label, value, min, max, step, unit, onChange,
+  label,
+  value,
+  min,
+  max,
+  step,
+  unit,
+  onChange,
 }: {
-  label: string; value: number; min: number; max: number; step: number; unit: string; onChange: (v: number) => void
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  step: number;
+  unit: string;
+  onChange: (v: number) => void;
 }) {
   return (
     <div>
@@ -962,12 +1158,16 @@ function SliderSetting({
         </span>
       </div>
       <input
-        type="range" min={min} max={max} step={step} value={value}
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
         onChange={(e) => onChange(Number(e.target.value))}
         className="w-full accent-[var(--color-accent)] cursor-pointer h-1.5"
       />
     </div>
-  )
+  );
 }
 
 // ── Styles constant ──
@@ -1167,4 +1367,4 @@ const FOCUS_STYLES = `
     to { opacity: 1; transform: translateY(0); }
   }
   .break-reminder-enter { animation: breakReminderSlide 0.4s ease-out; }
-`
+`;

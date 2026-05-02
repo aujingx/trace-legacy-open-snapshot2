@@ -1,8 +1,8 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { useAppStore } from '../store/useAppStore'
-import type { AppState } from '../store/useAppStore'
-import { IDLE_LONG } from './PetDialogue'
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAppStore } from '../store/useAppStore';
+import type { AppState } from '../store/useAppStore';
+import { IDLE_LONG } from './PetDialogue';
 
 // ─── Constants ───
 
@@ -18,10 +18,10 @@ const IDLE_MESSAGES = [
   '来摸摸我嘛～',
   '加油加油！',
   ...IDLE_LONG,
-]
+];
 
-const LS_HIDDEN_KEY = 'trace-pet-mini-widget-hidden'
-const LS_PET_NAME_KEY = 'trace-pet-mini-name'
+const LS_HIDDEN_KEY = 'trace-pet-mini-widget-hidden';
+const LS_PET_NAME_KEY = 'trace-pet-mini-name';
 
 // ─── Keyframes ───
 
@@ -42,136 +42,135 @@ const WIDGET_KEYFRAMES = `
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-2px); }
 }
-`
+`;
 
 const injectWidgetKeyframes = (() => {
-  let injected = false
+  let injected = false;
   return () => {
-    if (injected) return
-    injected = true
-    const s = document.createElement('style')
-    s.textContent = WIDGET_KEYFRAMES
-    document.head.appendChild(s)
-  }
-})()
+    if (injected) return;
+    injected = true;
+    const s = document.createElement('style');
+    s.textContent = WIDGET_KEYFRAMES;
+    document.head.appendChild(s);
+  };
+})();
 
 // ─── Helper ───
 
 function pickRandom(arr: string[]): string {
-  return arr[Math.floor(Math.random() * arr.length)]
+  return arr[Math.floor(Math.random() * arr.length)];
 }
 
 function getRandomInterval(min: number, max: number): number {
-  return Math.floor(Math.random() * (max - min + 1)) + min
+  return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
 // ─── PetMiniWidget Component ───
 
 export default function PetMiniWidget() {
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
   // Try to get pet from store; fall back gracefully
-  let storePetName = '小橘'
-  let storePetLevel = 1
+  let storePetName = '小橘';
+  let storePetLevel = 1;
   try {
-    const pet = useAppStore((s: AppState) => s.pet)
+    const pet = useAppStore((s: AppState) => s.pet);
     if (pet) {
-      storePetName = pet.name || '小橘'
-      storePetLevel = pet.level || 1
+      storePetName = pet.name || '小橘';
+      storePetLevel = pet.level || 1;
     }
   } catch {
     // Store may not have pet; use defaults
   }
 
   // Check focus mode if available
-  let isFocusMode = false
+  let isFocusMode = false;
   try {
-    const focusState = useAppStore((s: AppState) => s.focusState)
-    isFocusMode = focusState === 'working'
+    const focusState = useAppStore((s: AppState) => s.focusState);
+    isFocusMode = focusState === 'working';
   } catch {
     // focusState might not exist
   }
 
   // Resolve pet name: store > localStorage > default
-  const petName = storePetName !== '小橘'
-    ? storePetName
-    : localStorage.getItem(LS_PET_NAME_KEY) || '小橘'
-  const petLevel = storePetLevel
+  const petName =
+    storePetName !== '小橘' ? storePetName : localStorage.getItem(LS_PET_NAME_KEY) || '小橘';
+  const petLevel = storePetLevel;
 
   // Hidden preference
   const [hidden, setHidden] = useState(() => {
-    return localStorage.getItem(LS_HIDDEN_KEY) === 'true'
-  })
+    return localStorage.getItem(LS_HIDDEN_KEY) === 'true';
+  });
 
   // Speech bubble state
   const [bubble, setBubble] = useState<{ text: string; visible: boolean }>({
     text: '',
     visible: false,
-  })
-  const [bubbleDismissing, setBubbleDismissing] = useState(false)
-  const bubbleTimer = useRef<ReturnType<typeof setTimeout>>()
-  const nextBubbleTimer = useRef<ReturnType<typeof setTimeout>>()
+  });
+  const [bubbleDismissing, setBubbleDismissing] = useState(false);
+  const bubbleTimer = useRef<ReturnType<typeof setTimeout>>();
+  const nextBubbleTimer = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
-    injectWidgetKeyframes()
-  }, [])
+    injectWidgetKeyframes();
+  }, []);
 
   // Schedule random speech bubbles
   const scheduleBubble = useCallback(() => {
-    const delay = getRandomInterval(30000, 60000)
+    const delay = getRandomInterval(30000, 60000);
     nextBubbleTimer.current = setTimeout(() => {
-      const msg = pickRandom(IDLE_MESSAGES)
-      setBubble({ text: msg, visible: true })
-      setBubbleDismissing(false)
+      const msg = pickRandom(IDLE_MESSAGES);
+      setBubble({ text: msg, visible: true });
+      setBubbleDismissing(false);
 
       // Auto-hide after 5 seconds
       bubbleTimer.current = setTimeout(() => {
-        setBubbleDismissing(true)
+        setBubbleDismissing(true);
         setTimeout(() => {
-          setBubble((prev) => ({ ...prev, visible: false }))
-          setBubbleDismissing(false)
-          scheduleBubble()
-        }, 250)
-      }, 5000)
-    }, delay)
-  }, [])
+          setBubble((prev) => ({ ...prev, visible: false }));
+          setBubbleDismissing(false);
+          scheduleBubble();
+        }, 250);
+      }, 5000);
+    }, delay);
+  }, []);
 
   useEffect(() => {
     // Show initial bubble after a short delay
     const initialTimer = setTimeout(() => {
-      const msg = pickRandom(IDLE_MESSAGES)
-      setBubble({ text: msg, visible: true })
-      setBubbleDismissing(false)
+      const msg = pickRandom(IDLE_MESSAGES);
+      setBubble({ text: msg, visible: true });
+      setBubbleDismissing(false);
 
       bubbleTimer.current = setTimeout(() => {
-        setBubbleDismissing(true)
+        setBubbleDismissing(true);
         setTimeout(() => {
-          setBubble((prev) => ({ ...prev, visible: false }))
-          setBubbleDismissing(false)
-          scheduleBubble()
-        }, 250)
-      }, 5000)
-    }, 3000)
+          setBubble((prev) => ({ ...prev, visible: false }));
+          setBubbleDismissing(false);
+          scheduleBubble();
+        }, 250);
+      }, 5000);
+    }, 3000);
 
     return () => {
-      clearTimeout(initialTimer)
-      if (bubbleTimer.current) clearTimeout(bubbleTimer.current)
-      if (nextBubbleTimer.current) clearTimeout(nextBubbleTimer.current)
-    }
-  }, [scheduleBubble])
+      clearTimeout(initialTimer);
+      if (bubbleTimer.current) clearTimeout(bubbleTimer.current);
+      if (nextBubbleTimer.current) clearTimeout(nextBubbleTimer.current);
+    };
+  }, [scheduleBubble]);
 
   const handleHide = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation()
-    setHidden(true)
-    localStorage.setItem(LS_HIDDEN_KEY, 'true')
-  }, [])
+    e.stopPropagation();
+    setHidden(true);
+    localStorage.setItem(LS_HIDDEN_KEY, 'true');
+  }, []);
 
   const handleClick = useCallback(() => {
-    navigate('/pet')
-  }, [navigate])
+    navigate('/pet');
+  }, [navigate]);
 
   // Don't render if hidden or in focus mode
-  if (hidden || isFocusMode) return null
+  if (hidden || isFocusMode) return null;
 
   return (
     <div
@@ -253,7 +252,8 @@ export default function PetMiniWidget() {
           borderRadius: '1rem',
           background: 'var(--color-bg-surface-1, #fff)',
           border: '2px solid var(--color-border-subtle, #e5e0db)',
-          boxShadow: 'var(--shadow-card, 0 2px 8px rgba(44,24,16,0.06)), 0 4px 12px rgba(44,24,16,0.04)',
+          boxShadow:
+            'var(--shadow-card, 0 2px 8px rgba(44,24,16,0.06)), 0 4px 12px rgba(44,24,16,0.04)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -299,12 +299,12 @@ export default function PetMiniWidget() {
             transition: 'color 0.15s, border-color 0.15s',
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.color = 'var(--color-text-primary)'
-            e.currentTarget.style.borderColor = 'var(--color-text-muted)'
+            e.currentTarget.style.color = 'var(--color-text-primary)';
+            e.currentTarget.style.borderColor = 'var(--color-text-muted)';
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.color = 'var(--color-text-muted)'
-            e.currentTarget.style.borderColor = 'var(--color-border-subtle)'
+            e.currentTarget.style.color = 'var(--color-text-muted)';
+            e.currentTarget.style.borderColor = 'var(--color-border-subtle)';
           }}
           title="隐藏宠物挂件"
           aria-label="隐藏宠物挂件"
@@ -350,5 +350,5 @@ export default function PetMiniWidget() {
         {petName}
       </div>
     </div>
-  )
+  );
 }

@@ -17,19 +17,19 @@
  * 上线前请删除此文件夹所有内容
  */
 
-import type { TimeBlock, Task, ActivityCategory } from '../services/dataService'
+import type { TimeBlock, Task, ActivityCategory } from '../services/dataService';
 
 // 工具函数：获取相对时间
 const getRelativeTime = (hoursFromNow: number, durationMinutes: number) => {
-  const now = new Date()
-  const startTime = new Date(now.getTime() + hoursFromNow * 60 * 60 * 1000)
-  const endTime = new Date(startTime.getTime() + durationMinutes * 60 * 1000)
+  const now = new Date();
+  const startTime = new Date(now.getTime() + hoursFromNow * 60 * 60 * 1000);
+  const endTime = new Date(startTime.getTime() + durationMinutes * 60 * 1000);
   return {
     startTime: startTime.toISOString(),
     endTime: endTime.toISOString(),
     date: startTime.toISOString().slice(0, 10),
-  }
-}
+  };
+};
 
 // ============================================
 // 📅 测试用时间块数据
@@ -260,7 +260,7 @@ export const MOCK_TIME_BLOCKS: TimeBlock[] = [
     completed: false,
     source: 'manual',
   },
-]
+];
 
 // ============================================
 // ✅ 测试用任务数据 - 全面覆盖所有场景
@@ -676,7 +676,8 @@ export const MOCK_TASKS: Task[] = [
   // 超长标题
   {
     id: 'task-long-title',
-    title: '📝 这是一个非常非常非常长的任务标题，用来测试在卡片中标题文字截断的显示效果是否正常，确保在各种布局下都能正常显示',
+    title:
+      '📝 这是一个非常非常非常长的任务标题，用来测试在卡片中标题文字截断的显示效果是否正常，确保在各种布局下都能正常显示',
     project: '测试',
     priority: 3,
     status: 'todo',
@@ -730,15 +731,22 @@ export const MOCK_TASKS: Task[] = [
     createdAt: new Date().toISOString(),
     emotionalTag: 'resist',
   },
-]
-
+];
 
 // ============================================
 // 🏷️ 分类颜色映射（测试用）
 // ============================================
 export const TEST_CATEGORIES: ActivityCategory[] = [
-  '开发', '工作', '会议', '休息', '学习', '娱乐', '运动', '阅读', '其他'
-]
+  '开发',
+  '工作',
+  '会议',
+  '休息',
+  '学习',
+  '娱乐',
+  '运动',
+  '阅读',
+  '其他',
+];
 
 // ============================================
 // 📋 测试场景说明
@@ -755,4 +763,4 @@ export const TEST_SCENARIOS = {
   UNSCHEDULED_TASKS: '未计划的任务（显示在侧边栏待安排列表）',
   ALL_CATEGORIES: '所有分类颜色展示',
   CROSS_DAY: '跨天数据展示（昨天/今天/明天）',
-} as const
+} as const;

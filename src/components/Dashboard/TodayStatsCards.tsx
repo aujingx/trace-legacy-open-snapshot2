@@ -1,25 +1,25 @@
 // Today Stats Cards - four stat cards in a row
 // Splitted from Dashboard.tsx
 
-import { useTranslation } from 'react-i18next'
-import { useNavigate } from 'react-router-dom'
-import ProgressRing from './ProgressRing'
-import { CARD_GRADIENT_BG, TRANSITION_ALL } from './constants'
+import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
+import ProgressRing from './ProgressRing';
+import { CARD_GRADIENT_BG, TRANSITION_ALL } from './constants';
 
 interface TodayStatsCardsProps {
-  focusQualityScore: number
-  focusScoreColor: string
-  focusScoreGradient: string
-  dailyGoalMinutes: number
-  goalPct: number
-  totalHours: number
-  totalMins: number
-  accentColor: string
+  focusQualityScore: number;
+  focusScoreColor: string;
+  focusScoreGradient: string;
+  dailyGoalMinutes: number;
+  goalPct: number;
+  totalHours: number;
+  totalMins: number;
+  accentColor: string;
   dailyStats: {
-    activityCount: number
-    totalMinutes: number
-  }
-  streak: number
+    activityCount: number;
+    totalMinutes: number;
+  };
+  streak: number;
 }
 
 export default function TodayStatsCards({
@@ -34,15 +34,15 @@ export default function TodayStatsCards({
   dailyStats,
   streak,
 }: TodayStatsCardsProps) {
-  const { t } = useTranslation()
-  const navigate = useNavigate()
+  const { t } = useTranslation();
+  const navigate = useNavigate();
 
   function fmtDuration(mins: number): string {
-    const h = Math.floor(mins / 60)
-    const m = Math.round(mins % 60)
-    if (h > 0 && m > 0) return `${h}h ${m}m`
-    if (h > 0) return `${h}h`
-    return `${m}m`
+    const h = Math.floor(mins / 60);
+    const m = Math.round(mins % 60);
+    if (h > 0 && m > 0) return `${h}h ${m}m`;
+    if (h > 0) return `${h}h`;
+    return `${m}m`;
   }
 
   return (
@@ -59,12 +59,12 @@ export default function TodayStatsCards({
           transition: TRANSITION_ALL,
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.boxShadow = 'var(--shadow-card-hover)'
-          e.currentTarget.style.transform = 'translateY(-2px)'
+          e.currentTarget.style.boxShadow = 'var(--shadow-card-hover)';
+          e.currentTarget.style.transform = 'translateY(-2px)';
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.boxShadow = 'var(--shadow-card)'
-          e.currentTarget.style.transform = 'translateY(0)'
+          e.currentTarget.style.boxShadow = 'var(--shadow-card)';
+          e.currentTarget.style.transform = 'translateY(0)';
         }}
       >
         <div
@@ -87,7 +87,9 @@ export default function TodayStatsCards({
           </span>
         </div>
         <div className="min-w-0">
-          <p className="text-xs font-medium" style={{ color: 'var(--color-text-muted)' }}>{t('dashboard.focusQuality')}</p>
+          <p className="text-xs font-medium" style={{ color: 'var(--color-text-muted)' }}>
+            {t('dashboard.focusQuality')}
+          </p>
           <div className="flex items-center gap-1.5 mt-1">
             <div
               className="h-1.5 w-12 rounded-full overflow-hidden"
@@ -103,7 +105,11 @@ export default function TodayStatsCards({
               />
             </div>
             <span className="text-[10px]" style={{ color: focusScoreColor }}>
-              {focusQualityScore > 70 ? t('dashboard.focusQualityExcellent') : focusQualityScore >= 40 ? t('dashboard.focusQualityAverage') : t('dashboard.focusQualityNeedsImprovement')}
+              {focusQualityScore > 70
+                ? t('dashboard.focusQualityExcellent')
+                : focusQualityScore >= 40
+                  ? t('dashboard.focusQualityAverage')
+                  : t('dashboard.focusQualityNeedsImprovement')}
             </span>
           </div>
         </div>
@@ -121,12 +127,12 @@ export default function TodayStatsCards({
           transition: TRANSITION_ALL,
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.boxShadow = 'var(--shadow-card-hover)'
-          e.currentTarget.style.transform = 'translateY(-2px)'
+          e.currentTarget.style.boxShadow = 'var(--shadow-card-hover)';
+          e.currentTarget.style.transform = 'translateY(-2px)';
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.boxShadow = 'var(--shadow-card)'
-          e.currentTarget.style.transform = 'translateY(0)'
+          e.currentTarget.style.boxShadow = 'var(--shadow-card)';
+          e.currentTarget.style.transform = 'translateY(0)';
         }}
       >
         <ProgressRing value={goalPct} color={accentColor} onClick={() => navigate('/focus')}>
@@ -135,8 +141,13 @@ export default function TodayStatsCards({
           </span>
         </ProgressRing>
         <div className="min-w-0">
-          <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>{t('focus.title')}</p>
-          <p className="text-sm font-semibold mt-0.5" style={{ color: 'var(--color-text-primary)' }}>
+          <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+            {t('focus.title')}
+          </p>
+          <p
+            className="text-sm font-semibold mt-0.5"
+            style={{ color: 'var(--color-text-primary)' }}
+          >
             {Math.round(goalPct)}% {t('dashboard.goal')}
           </p>
           <p className="text-[10px]" style={{ color: 'var(--color-text-muted)' }}>
@@ -156,12 +167,12 @@ export default function TodayStatsCards({
           transition: TRANSITION_ALL,
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.boxShadow = 'var(--shadow-card-hover)'
-          e.currentTarget.style.transform = 'translateY(-2px)'
+          e.currentTarget.style.boxShadow = 'var(--shadow-card-hover)';
+          e.currentTarget.style.transform = 'translateY(-2px)';
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.boxShadow = 'var(--shadow-card)'
-          e.currentTarget.style.transform = 'translateY(0)'
+          e.currentTarget.style.boxShadow = 'var(--shadow-card)';
+          e.currentTarget.style.transform = 'translateY(0)';
         }}
       >
         <div
@@ -171,8 +182,13 @@ export default function TodayStatsCards({
           <span className="metric-value">{dailyStats.activityCount}</span>
         </div>
         <div className="min-w-0">
-          <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>{t('dashboard.activityCount')}</p>
-          <p className="text-sm font-semibold mt-0.5" style={{ color: 'var(--color-text-primary)' }}>
+          <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+            {t('dashboard.activityCount')}
+          </p>
+          <p
+            className="text-sm font-semibold mt-0.5"
+            style={{ color: 'var(--color-text-primary)' }}
+          >
             {t('dashboard.activitiesTracked')}
           </p>
         </div>
@@ -189,12 +205,12 @@ export default function TodayStatsCards({
           transition: TRANSITION_ALL,
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.boxShadow = 'var(--shadow-card-hover)'
-          e.currentTarget.style.transform = 'translateY(-2px)'
+          e.currentTarget.style.boxShadow = 'var(--shadow-card-hover)';
+          e.currentTarget.style.transform = 'translateY(-2px)';
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.boxShadow = 'var(--shadow-card)'
-          e.currentTarget.style.transform = 'translateY(0)'
+          e.currentTarget.style.boxShadow = 'var(--shadow-card)';
+          e.currentTarget.style.transform = 'translateY(0)';
         }}
       >
         <div
@@ -206,15 +222,24 @@ export default function TodayStatsCards({
           </span>
         </div>
         <div className="min-w-0">
-          <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>{t('dashboard.streak')}</p>
-          <p className="text-sm font-semibold mt-0.5" style={{ color: 'var(--color-text-primary)' }}>
+          <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+            {t('dashboard.streak')}
+          </p>
+          <p
+            className="text-sm font-semibold mt-0.5"
+            style={{ color: 'var(--color-text-primary)' }}
+          >
             {t('dashboard.daysActive')}
           </p>
           <p className="text-[10px]" style={{ color: 'var(--color-text-muted)' }}>
-            {streak >= 7 ? t('dashboard.streakGreat') : streak >= 3 ? t('dashboard.streakGood') : t('dashboard.streakStart')}
+            {streak >= 7
+              ? t('dashboard.streakGreat')
+              : streak >= 3
+                ? t('dashboard.streakGood')
+                : t('dashboard.streakStart')}
           </p>
         </div>
       </div>
     </div>
-  )
+  );
 }

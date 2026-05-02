@@ -187,9 +187,10 @@ export async function getDailyStats(date: string): Promise<{
 /**
  * Get monthly statistics
  */
-export async function getMonthlyStats(year: number, month: number): Promise<
-  Array<{ day: number; total_minutes: number }>
-> {
+export async function getMonthlyStats(
+  year: number,
+  month: number
+): Promise<Array<{ day: number; total_minutes: number }>> {
   if (!isDesktop()) {
     throw new Error('Not in desktop environment');
   }
@@ -222,10 +223,7 @@ export async function getAllActivitiesExport(): Promise<Activity[]> {
 /**
  * Classify activity using AI
  */
-export async function classifyActivity(
-  appName: string,
-  windowTitle: string
-): Promise<string> {
+export async function classifyActivity(appName: string, windowTitle: string): Promise<string> {
   if (!isDesktop()) {
     throw new Error('Not in desktop environment');
   }

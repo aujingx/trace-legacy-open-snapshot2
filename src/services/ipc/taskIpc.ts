@@ -73,11 +73,11 @@ function plannedTaskToFrontend(backend: BackendPlannedTask): Task {
     id: backend.id,
     title: backend.title,
     priority: Math.max(1, Math.min(5, backend.priority)) as 1 | 2 | 3 | 4 | 5,
-    status: backend.completed ? 'completed' as TaskStatus : 'pending' as TaskStatus,
+    status: backend.completed ? ('completed' as TaskStatus) : ('pending' as TaskStatus),
     estimatedMinutes: backend.estimated_minutes,
     actualMinutes: backend.actual_minutes,
     project: backend.project || '',
-    subtasks: (backend.subtasks || []).map(s => ({
+    subtasks: (backend.subtasks || []).map((s) => ({
       id: s.id,
       title: s.title,
       completed: s.completed,
@@ -198,7 +198,8 @@ export async function updateTask(id: string, update: Partial<Task>): Promise<voi
   const backendUpdate: Record<string, unknown> = { id };
   if (update.title !== undefined) backendUpdate.title = update.title;
   if (update.priority !== undefined) backendUpdate.priority = update.priority;
-  if (update.estimatedMinutes !== undefined) backendUpdate.estimated_minutes = update.estimatedMinutes;
+  if (update.estimatedMinutes !== undefined)
+    backendUpdate.estimated_minutes = update.estimatedMinutes;
   if (update.actualMinutes !== undefined) backendUpdate.actual_minutes = update.actualMinutes;
   if (update.status !== undefined) backendUpdate.status = update.status;
   if (update.project !== undefined) backendUpdate.category = update.project;
@@ -210,10 +211,7 @@ export async function updateTask(id: string, update: Partial<Task>): Promise<voi
 /**
  * Update a planned task (JSON file)
  */
-export async function updatePlannedTask(
-  id: string,
-  update: Partial<Task>
-): Promise<void> {
+export async function updatePlannedTask(id: string, update: Partial<Task>): Promise<void> {
   if (!isDesktop()) {
     throw new Error('Not in desktop environment');
   }
@@ -265,15 +263,12 @@ export async function matchActivityToTask(activityId: string, taskId: string): P
 /**
  * AI reschedule tasks
  */
-export async function aiRescheduleTasks(
-  tasks: Task[],
-  currentHour: number
-): Promise<Task[]> {
+export async function aiRescheduleTasks(tasks: Task[], currentHour: number): Promise<Task[]> {
   if (!isDesktop()) {
     throw new Error('Not in desktop environment');
   }
   // Convert tasks to backend format
-  const backendTasks = tasks.map(t => ({
+  const backendTasks = tasks.map((t) => ({
     id: t.id,
     title: t.title,
     priority: t.priority,
@@ -283,7 +278,7 @@ export async function aiRescheduleTasks(
     created_at: t.createdAt,
     project: t.project || null,
     repeat_type: t.repeatType,
-    subtasks: t.subtasks.map(s => ({ id: s.id, title: s.title, completed: s.completed })),
+    subtasks: t.subtasks.map((s) => ({ id: s.id, title: s.title, completed: s.completed })),
     due_date: t.dueDate || null,
   }));
   const result = await invoke<BackendPlannedTask[]>('ai_reschedule_tasks', {

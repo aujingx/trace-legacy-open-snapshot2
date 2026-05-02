@@ -1,16 +1,16 @@
-import { useState } from 'react'
-import { ChevronRight, GripVertical, Pencil, Trash2, Clock, Calendar, Play } from 'lucide-react'
-import type { Task } from '../services/dataService'
-import { formatDateShort } from '../constants/task'
+import { useState } from 'react';
+import { ChevronRight, GripVertical, Pencil, Trash2, Clock, Calendar, Play } from 'lucide-react';
+import type { Task } from '../services/dataService';
+import { formatDateShort } from '../constants/task';
 
 interface UnscheduledTaskListProps {
-  tasks: Task[]
-  onTaskDragStart?: (e: React.DragEvent, task: Task) => void
-  onTaskClick?: (task: Task) => void
-  onStartFocus?: (task: Task) => void
-  onEditTask?: (task: Task) => void
-  onDeleteTask?: (task: Task) => void
-  className?: string
+  tasks: Task[];
+  onTaskDragStart?: (e: React.DragEvent, task: Task) => void;
+  onTaskClick?: (task: Task) => void;
+  onStartFocus?: (task: Task) => void;
+  onEditTask?: (task: Task) => void;
+  onDeleteTask?: (task: Task) => void;
+  className?: string;
 }
 
 const PRIORITY_COLORS: Record<number, string> = {
@@ -19,7 +19,7 @@ const PRIORITY_COLORS: Record<number, string> = {
   3: 'var(--color-lemon)',
   4: 'var(--color-coral)',
   5: '#FF5252',
-}
+};
 
 const PRIORITY_LABELS: Record<number, string> = {
   1: '低',
@@ -27,7 +27,7 @@ const PRIORITY_LABELS: Record<number, string> = {
   3: '高',
   4: '紧急',
   5: '非常紧急',
-}
+};
 
 export default function UnscheduledTaskList({
   tasks,
@@ -38,22 +38,22 @@ export default function UnscheduledTaskList({
   onDeleteTask,
   className = '',
 }: UnscheduledTaskListProps) {
-  const [isExpanded, setIsExpanded] = useState(true)
-  const [isDragging, setIsDragging] = useState(false)
+  const [isExpanded, setIsExpanded] = useState(true);
+  const [isDragging, setIsDragging] = useState(false);
 
-  const unscheduledTasks = tasks.filter(t => t.status !== 'completed' && !t.scheduledStartTime)
-  const count = unscheduledTasks.length
+  const unscheduledTasks = tasks.filter((t) => t.status !== 'completed' && !t.scheduledStartTime);
+  const count = unscheduledTasks.length;
 
   const handleDragStart = (e: React.DragEvent, task: Task) => {
-    e.dataTransfer.setData('taskId', task.id)
-    e.dataTransfer.effectAllowed = 'move'
-    setIsDragging(true)
-    onTaskDragStart?.(e, task)
-  }
+    e.dataTransfer.setData('taskId', task.id);
+    e.dataTransfer.effectAllowed = 'move';
+    setIsDragging(true);
+    onTaskDragStart?.(e, task);
+  };
 
   const handleDragEnd = () => {
-    setIsDragging(false)
-  }
+    setIsDragging(false);
+  };
 
   return (
     <div
@@ -99,11 +99,14 @@ export default function UnscheduledTaskList({
         <div className="px-4 pb-4">
           {count > 0 ? (
             <>
-              <p className="text-xs mb-3 text-center py-2 rounded-lg" style={{ background: '#EFF6FF', color: '#3B82F6' }}>
+              <p
+                className="text-xs mb-3 text-center py-2 rounded-lg"
+                style={{ background: '#EFF6FF', color: '#3B82F6' }}
+              >
                 💡 拖拽任务到时间线安排时间
               </p>
               <div className="space-y-2">
-                {unscheduledTasks.map(task => (
+                {unscheduledTasks.map((task) => (
                   <div
                     key={task.id}
                     data-testid="unscheduled-task"
@@ -111,12 +114,18 @@ export default function UnscheduledTaskList({
                     onDragStart={(e) => handleDragStart(e, task)}
                     onDragEnd={handleDragEnd}
                     className="p-3 rounded-xl flex items-start gap-2 transition-all hover:shadow-md cursor-grab active:cursor-grabbing group"
-                    style={{ background: '#FAF8F5', border: '2px dashed var(--color-border-strong)' }}
+                    style={{
+                      background: 'var(--color-bg-surface-1)',
+                      border: '2px dashed var(--color-border-strong)',
+                    }}
                     onClick={() => onTaskClick?.(task)}
                   >
                     {/* 拖拽手柄 - 垂直居中 */}
                     <div className="pt-0.5">
-                      <GripVertical size={14} style={{ color: 'var(--color-border-strong)', flexShrink: 0 }} />
+                      <GripVertical
+                        size={14}
+                        style={{ color: 'var(--color-border-strong)', flexShrink: 0 }}
+                      />
                     </div>
 
                     {/* 优先级圆点 - 垂直居中 */}
@@ -133,18 +142,28 @@ export default function UnscheduledTaskList({
 
                     {/* 内容区域 - 更大宽度 */}
                     <div className="flex-1 min-w-0 pr-1">
-                      <p data-testid="task-title" className="text-sm font-medium truncate leading-tight" style={{ color: 'var(--color-text-primary)' }}>
+                      <p
+                        data-testid="task-title"
+                        className="text-sm font-medium truncate leading-tight"
+                        style={{ color: 'var(--color-text-primary)' }}
+                      >
                         {task.title}
                       </p>
                       <div className="flex items-center gap-2 mt-1 flex-wrap">
                         {task.dueDate && (
-                          <span className="text-xs flex items-center gap-0.5 whitespace-nowrap" style={{ color: 'var(--color-text-muted)' }}>
+                          <span
+                            className="text-xs flex items-center gap-0.5 whitespace-nowrap"
+                            style={{ color: 'var(--color-text-muted)' }}
+                          >
                             <Calendar size={10} />
                             {formatDateShort(task.dueDate)}
                           </span>
                         )}
                         {task.estimatedMinutes && (
-                          <span className="text-xs flex items-center gap-0.5 whitespace-nowrap" style={{ color: 'var(--color-text-muted)' }}>
+                          <span
+                            className="text-xs flex items-center gap-0.5 whitespace-nowrap"
+                            style={{ color: 'var(--color-text-muted)' }}
+                          >
                             <Clock size={10} />
                             {task.estimatedMinutes}m
                           </span>
@@ -162,8 +181,8 @@ export default function UnscheduledTaskList({
                       {onStartFocus && (
                         <button
                           onClick={(e) => {
-                            e.stopPropagation()
-                            onStartFocus(task)
+                            e.stopPropagation();
+                            onStartFocus(task);
                           }}
                           className="p-2 rounded-lg transition-all hover:scale-110"
                           style={{ background: '#34D39920' }}
@@ -175,8 +194,8 @@ export default function UnscheduledTaskList({
                       {onEditTask && (
                         <button
                           onClick={(e) => {
-                            e.stopPropagation()
-                            onEditTask(task)
+                            e.stopPropagation();
+                            onEditTask(task);
                           }}
                           className="p-2 rounded-lg transition-all hover:scale-110"
                           style={{ background: 'var(--color-blue)20' }}
@@ -188,8 +207,8 @@ export default function UnscheduledTaskList({
                       {onDeleteTask && (
                         <button
                           onClick={(e) => {
-                            e.stopPropagation()
-                            onDeleteTask(task)
+                            e.stopPropagation();
+                            onDeleteTask(task);
                           }}
                           className="p-2 rounded-lg transition-all hover:scale-110"
                           style={{ background: '#F8717120' }}
@@ -204,7 +223,10 @@ export default function UnscheduledTaskList({
               </div>
             </>
           ) : (
-            <div className="text-center py-8" style={{ background: '#FAF8F5', borderRadius: '12px' }}>
+            <div
+              className="text-center py-8"
+              style={{ background: 'var(--color-bg-surface-1)', borderRadius: '12px' }}
+            >
               <p className="text-2xl mb-2">✨</p>
               <p className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>
                 所有任务都已安排
@@ -217,5 +239,5 @@ export default function UnscheduledTaskList({
         </div>
       )}
     </div>
-  )
+  );
 }

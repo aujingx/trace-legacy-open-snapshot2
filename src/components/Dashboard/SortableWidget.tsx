@@ -1,40 +1,29 @@
 // Sortable Widget wrapper for dnd-kit drag-drop
 // Splitted from Dashboard.tsx
 
-import { useSortable } from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 interface SortableWidgetProps {
-  id: string
-  children: React.ReactNode
-  isOverlay?: boolean
+  id: string;
+  children: React.ReactNode;
+  isOverlay?: boolean;
 }
 
-export default function SortableWidget({
-  id,
-  children,
-  isOverlay = false,
-}: SortableWidgetProps) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id })
+export default function SortableWidget({ id, children, isOverlay = false }: SortableWidgetProps) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id,
+  });
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.3 : 1,
     cursor: isDragging ? 'grabbing' : 'grab',
-    position: isOverlay ? 'fixed' as const : undefined,
+    position: isOverlay ? ('fixed' as const) : undefined,
     zIndex: isOverlay ? 999 : undefined,
-    boxShadow: isDragging
-      ? '0 12px 32px rgba(0,0,0,0.15)'
-      : undefined,
-  }
+    boxShadow: isDragging ? '0 12px 32px rgba(0,0,0,0.15)' : undefined,
+  };
 
   return (
     <div
@@ -53,5 +42,5 @@ export default function SortableWidget({
         ⋮⋮
       </div>
     </div>
-  )
+  );
 }

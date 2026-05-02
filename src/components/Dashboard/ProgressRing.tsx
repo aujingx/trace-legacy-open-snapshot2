@@ -2,12 +2,12 @@
 // Splitted from Dashboard.tsx
 
 interface ProgressRingProps {
-  value: number
-  size?: number
-  stroke?: number
-  color: string
-  onClick?: () => void
-  children?: React.ReactNode
+  value: number;
+  size?: number;
+  stroke?: number;
+  color: string;
+  onClick?: () => void;
+  children?: React.ReactNode;
 }
 
 export default function ProgressRing({
@@ -18,10 +18,10 @@ export default function ProgressRing({
   onClick,
   children,
 }: ProgressRingProps) {
-  const r = (size - stroke) / 2
-  const c = 2 * Math.PI * r
-  const clamped = Math.max(0, Math.min(100, value))
-  const offset = c - (clamped / 100) * c
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
+  const clamped = Math.max(0, Math.min(100, value));
+  const offset = c - (clamped / 100) * c;
 
   return (
     <div
@@ -30,7 +30,13 @@ export default function ProgressRing({
       onClick={onClick}
       role={onClick ? 'button' : undefined}
       tabIndex={onClick ? 0 : undefined}
-      onKeyDown={onClick ? (e) => { if (e.key === 'Enter') onClick() } : undefined}
+      onKeyDown={
+        onClick
+          ? (e) => {
+              if (e.key === 'Enter') onClick();
+            }
+          : undefined
+      }
     >
       {/* Glow behind progress */}
       <div
@@ -65,5 +71,5 @@ export default function ProgressRing({
         {children}
       </div>
     </div>
-  )
+  );
 }

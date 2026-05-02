@@ -86,7 +86,9 @@ export async function getAllHabits(): Promise<Habit[]> {
 /**
  * Create a new habit
  */
-export async function createHabit(habit: Omit<Habit, 'id' | 'streak' | 'checkins' | 'createdAt'>): Promise<Habit> {
+export async function createHabit(
+  habit: Omit<Habit, 'id' | 'streak' | 'checkins' | 'createdAt'>
+): Promise<Habit> {
   if (!isDesktop()) {
     throw new Error('Not in desktop environment');
   }
@@ -132,7 +134,7 @@ export async function getHabitCheckins(habitId: string): Promise<Record<string, 
   }
   const result = await invoke<BackendDbHabitCheckin[]>('get_habit_checkins', { habit_id: habitId });
   const checkins: Record<string, number> = {};
-  result.forEach(c => {
+  result.forEach((c) => {
     checkins[c.checkin_date] = c.value;
   });
   return checkins;

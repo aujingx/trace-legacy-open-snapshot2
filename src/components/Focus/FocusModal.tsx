@@ -1,29 +1,29 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
-import { X, Minus, Pause, Play, RotateCcw, SkipForward, Square } from 'lucide-react'
-import { useFocusLogic } from './useFocusLogic'
-import { useAppStore } from '../../store/useAppStore'
-import type { Task } from '../../services/dataService'
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { X, Minus, Pause, Play, RotateCcw, SkipForward, Square } from 'lucide-react';
+import { useFocusLogic } from './useFocusLogic';
+import { useAppStore } from '../../store/useAppStore';
+import type { Task } from '../../services/dataService';
 
 // 预设的专注时长选项
-const FOCUS_DURATION_OPTIONS = [5, 15, 25, 45, 60]
+const FOCUS_DURATION_OPTIONS = [5, 15, 25, 45, 60];
 
 // 窗口模式类型
-export type FocusWindowMode = 'fullscreen' | 'window' | 'minimized'
+export type FocusWindowMode = 'fullscreen' | 'window' | 'minimized';
 
 // 拖拽状态类型
 interface DragState {
-  isDragging: boolean
-  startX: number
-  startY: number
-  initialLeft: number
-  initialTop: number
+  isDragging: boolean;
+  startX: number;
+  startY: number;
+  initialLeft: number;
+  initialTop: number;
 }
 
 interface FocusModalProps {
-  isOpen: boolean
-  onClose: () => void
-  initialMode?: FocusWindowMode
-  preselectedTask?: Task | null
+  isOpen: boolean;
+  onClose: () => void;
+  initialMode?: FocusWindowMode;
+  preselectedTask?: Task | null;
 }
 
 export default function FocusModal({
@@ -32,71 +32,74 @@ export default function FocusModal({
   initialMode = 'fullscreen',
   preselectedTask,
 }: FocusModalProps) {
-  const [windowMode, setWindowMode] = useState<FocusWindowMode>(initialMode)
-  const [selectedDuration, setSelectedDuration] = useState(25)
-  const [localTaskId, setLocalTaskId] = useState<string | null>(null)
+  const [windowMode, setWindowMode] = useState<FocusWindowMode>(initialMode);
+  const [selectedDuration, setSelectedDuration] = useState(25);
+  const [localTaskId, setLocalTaskId] = useState<string | null>(null);
 
   // 窗口拖拽状态
-  const [windowPosition, setWindowPosition] = useState({ left: 0, top: 0 })
+  const [windowPosition, setWindowPosition] = useState({ left: 0, top: 0 });
   const [dragState, setDragState] = useState<DragState>({
     isDragging: false,
     startX: 0,
     startY: 0,
     initialLeft: 0,
     initialTop: 0,
-  })
-  const modalRef = useRef<HTMLDivElement>(null)
+  });
+  const modalRef = useRef<HTMLDivElement>(null);
 
   // 鼠标按下 - 开始拖拽
-  const handleDragStart = useCallback((e: React.MouseEvent) => {
-    if (windowMode !== 'window') return
+  const handleDragStart = useCallback(
+    (e: React.MouseEvent) => {
+      if (windowMode !== 'window') return;
 
-    e.preventDefault()
-    setDragState({
-      isDragging: true,
-      startX: e.clientX,
-      startY: e.clientY,
-      initialLeft: windowPosition.left,
-      initialTop: windowPosition.top,
-    })
-  }, [windowMode, windowPosition])
+      e.preventDefault();
+      setDragState({
+        isDragging: true,
+        startX: e.clientX,
+        startY: e.clientY,
+        initialLeft: windowPosition.left,
+        initialTop: windowPosition.top,
+      });
+    },
+    [windowMode, windowPosition]
+  );
 
   // 鼠标移动 - 拖拽中
   useEffect(() => {
-    if (!dragState.isDragging) return
+    if (!dragState.isDragging) return;
 
     const handleMouseMove = (e: MouseEvent) => {
-      const deltaX = e.clientX - dragState.startX
-      const deltaY = e.clientY - dragState.startY
+      const deltaX = e.clientX - dragState.startX;
+      const deltaY = e.clientY - dragState.startY;
 
       setWindowPosition({
         left: dragState.initialLeft + deltaX,
         top: dragState.initialTop + deltaY,
-      })
-    }
+      });
+    };
 
     const handleMouseUp = () => {
-      setDragState(prev => ({ ...prev, isDragging: false }))
-    }
+      setDragState((prev) => ({ ...prev, isDragging: false }));
+    };
 
-    window.addEventListener('mousemove', handleMouseMove)
-    window.addEventListener('mouseup', handleMouseUp)
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
 
     return () => {
-      window.removeEventListener('mousemove', handleMouseMove)
-      window.removeEventListener('mouseup', handleMouseUp)
-    }
-  }, [dragState])
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [dragState]);
 
   // 切换窗口模式时重置位置
   useEffect(() => {
     if (windowMode === 'window') {
       // 默认放在右下角
-      setWindowPosition({ left: 0, top: 0 })
+      setWindowPosition({ left: 0, top: 0 });
     }
-  }, [windowMode])
+  }, [windowMode]);
 
-  const addToast = useAppStore((s) => s.addToast)
+  const addToast = useAppStore((s) => s.addToast);
 
   const {
     isIdle,
@@ -114,75 +117,79 @@ export default function FocusModal({
     pauseFocus,
     resetFocus,
     skipBreak,
-  } = useFocusLogic()
+  } = useFocusLogic();
 
   // 同步外部传入的预设任务
   useEffect(() => {
     if (preselectedTask && isOpen) {
-      setLocalTaskId(preselectedTask.id)
+      setLocalTaskId(preselectedTask.id);
     }
-  }, [preselectedTask, isOpen])
+  }, [preselectedTask, isOpen]);
 
   // 打开时重置本地状态
   useEffect(() => {
     if (isOpen) {
-      setWindowMode(initialMode)
+      setWindowMode(initialMode);
       if (!currentFocusTaskId) {
-        setLocalTaskId(preselectedTask?.id || null)
+        setLocalTaskId(preselectedTask?.id || null);
       }
     }
-  }, [isOpen, initialMode, currentFocusTaskId, preselectedTask])
+  }, [isOpen, initialMode, currentFocusTaskId, preselectedTask]);
 
   // 真正使用的任务 ID（优先全局专注中的任务，其次本地选择，最后预设）
-  const effectiveTaskId = currentFocusTaskId || localTaskId
+  const effectiveTaskId = currentFocusTaskId || localTaskId;
 
   // 处理开始按钮
   const handleStart = () => {
-    const taskIdToUse = effectiveTaskId || undefined
-    startFocus(taskIdToUse, selectedDuration)
-    addToast('success', '开始专注！')
-  }
+    const taskIdToUse = effectiveTaskId || undefined;
+    startFocus(taskIdToUse, selectedDuration);
+    addToast('success', '开始专注！');
+  };
 
   // 暂停
   const handlePause = () => {
-    pauseFocus()
-    addToast('info', '已暂停专注')
-  }
+    pauseFocus();
+    addToast('info', '已暂停专注');
+  };
 
   // 重置/放弃
   const handleReset = () => {
-    const totalMinutes = Math.round((focusSettings.workMinutes * 60 - focusTimeLeft) / 60)
-    resetFocus()
+    const totalMinutes = Math.round((focusSettings.workMinutes * 60 - focusTimeLeft) / 60);
+    resetFocus();
     if (isWorking && totalMinutes > 0) {
-      addToast('info', `已放弃专注，累计 ${totalMinutes} 分钟`)
+      addToast('info', `已放弃专注，累计 ${totalMinutes} 分钟`);
     } else {
-      addToast('info', '已重置计时器')
+      addToast('info', '已重置计时器');
     }
-  }
+  };
 
   // 跳过休息
   const handleSkipBreak = () => {
-    skipBreak()
-    addToast('info', '休息已跳过')
-  }
+    skipBreak();
+    addToast('info', '休息已跳过');
+  };
 
   // 切换到窗口模式
   const setWindowModeWithToast = (mode: FocusWindowMode) => {
-    setWindowMode(mode)
+    setWindowMode(mode);
     if (mode === 'minimized') {
-      addToast('info', '已最小化到托盘，点击图标恢复')
+      addToast('info', '已最小化到托盘，点击图标恢复');
     }
-  }
+  };
 
   // 如果没打开，返回 null
-  if (!isOpen) return null
+  if (!isOpen) return null;
 
   // ──────────────────────────────────────────────────────
   // 📱 最小化模式 - 右下角小浮窗
   // ──────────────────────────────────────────────────────
   if (windowMode === 'minimized') {
-    const bgColor = isWorking ? 'var(--color-blue)' : isBreak || isLongBreak ? 'var(--color-green)' : 'var(--color-purple)'
-    const textColor = 'white'
+    const bgColor = isWorking
+      ? 'var(--color-blue)'
+      : isBreak || isLongBreak
+        ? 'var(--color-green)'
+        : 'var(--color-purple)';
+    const textColor = 'white';
 
     return (
       <div
@@ -198,10 +205,7 @@ export default function FocusModal({
         >
           <span className="text-xl">🍅</span>
           <div>
-            <div
-              className="text-lg font-bold font-mono tabular-nums"
-              style={{ color: textColor }}
-            >
+            <div className="text-lg font-bold font-mono tabular-nums" style={{ color: textColor }}>
               {formatMMSS(focusTimeLeft)}
             </div>
             {isWorking && (
@@ -212,8 +216,8 @@ export default function FocusModal({
           </div>
           <button
             onClick={(e) => {
-              e.stopPropagation()
-              onClose()
+              e.stopPropagation();
+              onClose();
             }}
             className="ml-1 p-1 rounded-lg hover:bg-white/20 transition-colors"
           >
@@ -221,14 +225,14 @@ export default function FocusModal({
           </button>
         </div>
       </div>
-    )
+    );
   }
 
   // ──────────────────────────────────────────────────────
   // 🖥️ 全屏模式 / 可拖拽窗口模式
   // ──────────────────────────────────────────────────────
-  const isFullscreen = windowMode === 'fullscreen'
-  const isDragging = dragState.isDragging
+  const isFullscreen = windowMode === 'fullscreen';
+  const isDragging = dragState.isDragging;
 
   return (
     <div
@@ -259,7 +263,10 @@ export default function FocusModal({
       >
         {/* ─── 顶部拖拽提示条 ─── */}
         {windowMode === 'window' && (
-          <div className="absolute top-2 left-1/2 -translate-x-1/2 w-12 h-1 rounded-full opacity-30" style={{ background: 'var(--color-border-strong)' }} />
+          <div
+            className="absolute top-2 left-1/2 -translate-x-1/2 w-12 h-1 rounded-full opacity-30"
+            style={{ background: 'var(--color-border-strong)' }}
+          />
         )}
 
         {/* ─── 顶部控制按钮 ─── */}
@@ -314,7 +321,10 @@ export default function FocusModal({
         {currentFocusTask && (
           <div
             className="mb-6 p-4 rounded-xl text-center"
-            style={{ background: 'rgba(121, 190, 235, 0.1)', border: '1px solid var(--color-blue)30' }}
+            style={{
+              background: 'rgba(121, 190, 235, 0.1)',
+              border: '1px solid var(--color-blue)30',
+            }}
           >
             <p className="text-xs font-semibold mb-1" style={{ color: 'var(--color-blue)' }}>
               当前任务
@@ -338,7 +348,9 @@ export default function FocusModal({
         >
           <div
             className="text-5xl font-bold tracking-wider font-mono"
-            style={{ color: isWorking ? '#2D7A9A' : isBreak || isLongBreak ? '#2D8A6A' : '#5A4A8A' }}
+            style={{
+              color: isWorking ? '#2D7A9A' : isBreak || isLongBreak ? '#2D8A6A' : '#5A4A8A',
+            }}
           >
             {formatMMSS(focusTimeLeft)}
           </div>
@@ -347,7 +359,10 @@ export default function FocusModal({
           <div className="mt-4 flex items-center justify-center gap-2">
             {isWorking && (
               <>
-                <div className="w-2 h-2 rounded-full animate-pulse" style={{ background: 'var(--color-blue)' }} />
+                <div
+                  className="w-2 h-2 rounded-full animate-pulse"
+                  style={{ background: 'var(--color-blue)' }}
+                />
                 <span className="text-sm font-semibold" style={{ color: 'var(--color-blue)' }}>
                   专注中...
                 </span>
@@ -355,7 +370,10 @@ export default function FocusModal({
             )}
             {(isBreak || isLongBreak) && (
               <>
-                <div className="w-2 h-2 rounded-full animate-pulse" style={{ background: 'var(--color-green)' }} />
+                <div
+                  className="w-2 h-2 rounded-full animate-pulse"
+                  style={{ background: 'var(--color-green)' }}
+                />
                 <span className="text-sm font-semibold" style={{ color: 'var(--color-green)' }}>
                   {isLongBreak ? '长休息' : '休息中'}
                 </span>
@@ -387,7 +405,10 @@ export default function FocusModal({
         {/* ─── 时长选择器（仅在空闲时显示） ─── */}
         {isIdle && (
           <div className="mb-6">
-            <p className="text-sm font-semibold mb-3 text-center" style={{ color: 'var(--color-text-secondary)' }}>
+            <p
+              className="text-sm font-semibold mb-3 text-center"
+              style={{ color: 'var(--color-text-secondary)' }}
+            >
               选择专注时长
             </p>
             <div className="flex justify-center gap-2 flex-wrap">
@@ -397,9 +418,13 @@ export default function FocusModal({
                   onClick={() => setSelectedDuration(mins)}
                   className="px-4 py-2 rounded-xl text-sm font-semibold transition-all hover:scale-105"
                   style={{
-                    background: selectedDuration === mins ? 'var(--color-purple)' : 'var(--color-bg-surface-3)',
+                    background:
+                      selectedDuration === mins
+                        ? 'var(--color-purple)'
+                        : 'var(--color-bg-surface-3)',
                     color: selectedDuration === mins ? '#5A4A8A' : 'var(--color-text-secondary)',
-                    border: selectedDuration === mins ? '2px solid #B8A0E8' : '2px solid transparent',
+                    border:
+                      selectedDuration === mins ? '2px solid #B8A0E8' : '2px solid transparent',
                   }}
                 >
                   {mins} 分钟
@@ -424,7 +449,10 @@ export default function FocusModal({
               <button
                 onClick={handleReset}
                 className="px-6 py-3 rounded-xl font-semibold transition-all hover:scale-105 flex items-center gap-2"
-                style={{ background: 'var(--color-bg-surface-3)', color: 'var(--color-text-secondary)' }}
+                style={{
+                  background: 'var(--color-bg-surface-3)',
+                  color: 'var(--color-text-secondary)',
+                }}
               >
                 <RotateCcw size={18} />
                 放弃
@@ -443,7 +471,10 @@ export default function FocusModal({
               <button
                 onClick={handleReset}
                 className="px-6 py-3 rounded-xl font-semibold transition-all hover:scale-105 flex items-center gap-2"
-                style={{ background: 'var(--color-bg-surface-3)', color: 'var(--color-text-secondary)' }}
+                style={{
+                  background: 'var(--color-bg-surface-3)',
+                  color: 'var(--color-text-secondary)',
+                }}
               >
                 <RotateCcw size={18} />
                 结束
@@ -462,7 +493,10 @@ export default function FocusModal({
         </div>
 
         {/* ─── 今日统计 ─── */}
-        <div className="text-center pt-4 border-t" style={{ borderColor: 'var(--color-border-light)' }}>
+        <div
+          className="text-center pt-4 border-t"
+          style={{ borderColor: 'var(--color-border-light)' }}
+        >
           <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
             今日已完成{' '}
             <span className="font-bold" style={{ color: 'var(--color-blue)' }}>
@@ -476,5 +510,5 @@ export default function FocusModal({
         </div>
       </div>
     </div>
-  )
+  );
 }

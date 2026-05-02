@@ -1,4 +1,12 @@
-import React, { Suspense, useEffect, useState, useRef, createContext, useContext, useCallback } from 'react';
+import React, {
+  Suspense,
+  useEffect,
+  useState,
+  useRef,
+  createContext,
+  useContext,
+  useCallback,
+} from 'react';
 import { useTranslation } from 'react-i18next';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAppStore } from './store/useAppStore';
@@ -75,8 +83,8 @@ import type { AppState, Activity } from './store/useAppStore';
 type ModalType = 'started' | 'completed' | 'goalAchieved' | 'dailyReview';
 
 function todayStr(): string {
-  const d = new Date()
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
 function FocusPopupManager() {
@@ -107,7 +115,7 @@ function FocusPopupManager() {
 
   // Add modal to queue - called by various triggers
   const addModalToQueue = useCallback((type: ModalType) => {
-    setModalQueue(prev => {
+    setModalQueue((prev) => {
       if (prev.includes(type)) return prev; // Avoid duplicates
       return [...prev, type];
     });
@@ -115,7 +123,7 @@ function FocusPopupManager() {
 
   // Close current modal and show next in queue
   const closeCurrentModal = useCallback(() => {
-    setModalQueue(prev => prev.slice(1));
+    setModalQueue((prev) => prev.slice(1));
   }, []);
 
   // Show "started" modal when transitioning from idle → working
@@ -155,7 +163,13 @@ function FocusPopupManager() {
       // Wait for other modals to complete first
       setTimeout(() => addModalToQueue('goalAchieved'), 2000);
     }
-  }, [activities, dailyGoalMinutes, lastGoalAchievedDate, setLastGoalAchievedDate, addModalToQueue]);
+  }, [
+    activities,
+    dailyGoalMinutes,
+    lastGoalAchievedDate,
+    setLastGoalAchievedDate,
+    addModalToQueue,
+  ]);
 
   // Check Daily Review trigger: after 20:00, and not done today
   const dailyReviewShown = useRef(false);
@@ -164,11 +178,7 @@ function FocusPopupManager() {
     const today = todayStr();
     const currentHour = new Date().getHours();
 
-    if (
-      guardianSettings.dailyReviewEnabled &&
-      currentHour >= 20 &&
-      lastDailyReviewDate !== today
-    ) {
+    if (guardianSettings.dailyReviewEnabled && currentHour >= 20 && lastDailyReviewDate !== today) {
       dailyReviewShown.current = true;
       // Wait longer to ensure it shows after achievement modals
       setTimeout(() => addModalToQueue('dailyReview'), 5000);
@@ -199,10 +209,7 @@ function FocusPopupManager() {
         totalMinutes={activities.reduce((sum, a) => sum + (a.duration || 0), 0)}
         goalMinutes={dailyGoalMinutes}
       />
-      <DailyReview
-        isOpen={activeModal === 'dailyReview'}
-        onComplete={closeCurrentModal}
-      />
+      <DailyReview isOpen={activeModal === 'dailyReview'} onComplete={closeCurrentModal} />
     </>
   );
 }

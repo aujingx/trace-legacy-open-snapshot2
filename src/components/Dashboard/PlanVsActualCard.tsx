@@ -1,15 +1,15 @@
-import { Target, TrendingUp, TrendingDown } from 'lucide-react'
+import { Target, TrendingUp, TrendingDown } from 'lucide-react';
 
 interface Props {
-  plannedMinutes: number
-  actualMinutes: number
-  goalMinutes: number
+  plannedMinutes: number;
+  actualMinutes: number;
+  goalMinutes: number;
 }
 
 export default function PlanVsActualCard({ plannedMinutes, actualMinutes, goalMinutes }: Props) {
-  const progress = goalMinutes > 0 ? Math.min(100, (actualMinutes / goalMinutes) * 100) : 0
-  const variance = actualMinutes - plannedMinutes
-  const isOnTrack = variance >= 0
+  const progress = goalMinutes > 0 ? Math.min(100, (actualMinutes / goalMinutes) * 100) : 0;
+  const variance = actualMinutes - plannedMinutes;
+  const isOnTrack = variance >= 0;
 
   return (
     <div
@@ -95,9 +95,10 @@ export default function PlanVsActualCard({ plannedMinutes, actualMinutes, goalMi
           className="text-sm font-semibold"
           style={{ color: isOnTrack ? 'var(--color-green)' : 'var(--color-coral)' }}
         >
-          {isOnTrack ? '+' : ''}{Math.floor(variance / 60)}h {variance % 60}m {isOnTrack ? 'ahead' : 'behind'}
+          {isOnTrack ? '+' : ''}
+          {Math.floor(variance / 60)}h {variance % 60}m {isOnTrack ? 'ahead' : 'behind'}
         </span>
       </div>
     </div>
-  )
+  );
 }

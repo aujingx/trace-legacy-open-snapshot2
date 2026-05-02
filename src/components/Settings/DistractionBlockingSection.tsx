@@ -1,21 +1,21 @@
 // Distraction Blocking Settings Section
 
-import { useCallback } from 'react'
-import { useTranslation } from 'react-i18next'
-import { Section } from './components'
-import type { BlockedPattern } from '../../services/dataService'
+import { useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
+import { Section } from './components';
+import type { BlockedPattern } from '../../services/dataService';
 
 interface DistractionBlockingSectionProps {
-  index: number
-  blockedPatterns: BlockedPattern[]
-  setBlockedPatterns: (patterns: BlockedPattern[]) => void
-  blockingScheduleMode: 'focusOnly' | 'always' | 'custom'
-  setBlockingScheduleMode: (mode: 'focusOnly' | 'always' | 'custom') => void
-  saveBlockedPatterns: (patterns: BlockedPattern[]) => Promise<void>
-  saveBlockingScheduleMode: (mode: 'focusOnly' | 'always' | 'custom') => Promise<void>
-  newPatternInput: string
-  setNewPatternInput: (value: string) => void
-  addNewPattern: () => void
+  index: number;
+  blockedPatterns: BlockedPattern[];
+  setBlockedPatterns: (patterns: BlockedPattern[]) => void;
+  blockingScheduleMode: 'focusOnly' | 'always' | 'custom';
+  setBlockingScheduleMode: (mode: 'focusOnly' | 'always' | 'custom') => void;
+  saveBlockedPatterns: (patterns: BlockedPattern[]) => Promise<void>;
+  saveBlockingScheduleMode: (mode: 'focusOnly' | 'always' | 'custom') => Promise<void>;
+  newPatternInput: string;
+  setNewPatternInput: (value: string) => void;
+  addNewPattern: () => void;
 }
 
 export default function DistractionBlockingSection({
@@ -30,37 +30,32 @@ export default function DistractionBlockingSection({
   setNewPatternInput,
   addNewPattern,
 }: DistractionBlockingSectionProps) {
-  const { t } = useTranslation()
+  const { t } = useTranslation();
 
-  const handleDelete = useCallback((id: string) => {
-    const newPatterns = blockedPatterns.filter(p => p.id !== id)
-    setBlockedPatterns(newPatterns)
-    saveBlockedPatterns(newPatterns)
-  }, [blockedPatterns, setBlockedPatterns, saveBlockedPatterns])
+  const handleDelete = useCallback(
+    (id: string) => {
+      const newPatterns = blockedPatterns.filter((p) => p.id !== id);
+      setBlockedPatterns(newPatterns);
+      saveBlockedPatterns(newPatterns);
+    },
+    [blockedPatterns, setBlockedPatterns, saveBlockedPatterns]
+  );
 
-  const enabledCount = blockedPatterns.filter(p => p.enabled).length
+  const enabledCount = blockedPatterns.filter((p) => p.enabled).length;
 
   return (
     <Section title={t('focus.blockedSites')} index={index}>
-      <p
-        className="text-xs"
-        style={{ color: 'var(--color-text-muted)' }}
-      >
+      <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
         {t('focus.shieldDescription')}
       </p>
-      <p
-        className="text-xs"
-        style={{ color: 'var(--color-text-muted)' }}
-      >
+      <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
         {t('focus.desktopNote')}
       </p>
 
       <div className="mt-4 space-y-3">
         {/* Blocked list */}
         {blockedPatterns.length === 0 ? (
-          <p className="text-sm text-[var(--color-text-muted)] py-3">
-            {t('focus.noBlockRules')}
-          </p>
+          <p className="text-sm text-[var(--color-text-muted)] py-3">{t('focus.noBlockRules')}</p>
         ) : (
           <div className="space-y-2">
             {blockedPatterns.map((pattern) => (
@@ -74,7 +69,10 @@ export default function DistractionBlockingSection({
                 }}
               >
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>
+                  <span
+                    className="text-sm font-medium"
+                    style={{ color: 'var(--color-text-primary)' }}
+                  >
                     {pattern.pattern}
                   </span>
                 </div>
@@ -107,9 +105,7 @@ export default function DistractionBlockingSection({
                 color: 'var(--color-text-primary)',
               }}
             />
-            <p className="text-xs text-[var(--color-text-muted)] mt-1">
-              {t('focus.domainHint')}
-            </p>
+            <p className="text-xs text-[var(--color-text-muted)] mt-1">{t('focus.domainHint')}</p>
           </div>
           <button
             onClick={addNewPattern}
@@ -126,32 +122,32 @@ export default function DistractionBlockingSection({
             {t('focus.scheduleMode')}
           </label>
           <div className="space-y-2">
-            {([
-              { value: 'focusOnly', label: t('focus.focusOnly'), desc: t('focus.focusOnlyDesc') },
-              { value: 'always', label: t('focus.always'), desc: t('focus.alwaysDesc') },
-            ] as const).map((opt) => (
+            {(
+              [
+                { value: 'focusOnly', label: t('focus.focusOnly'), desc: t('focus.focusOnlyDesc') },
+                { value: 'always', label: t('focus.always'), desc: t('focus.alwaysDesc') },
+              ] as const
+            ).map((opt) => (
               <button
                 key={opt.value}
                 onClick={() => {
-                  setBlockingScheduleMode(opt.value)
-                  saveBlockingScheduleMode(opt.value)
+                  setBlockingScheduleMode(opt.value);
+                  saveBlockingScheduleMode(opt.value);
                 }}
                 className="w-full text-left cursor-pointer p-3 border rounded-lg transition-all"
                 style={{
-                  border: blockingScheduleMode === opt.value
-                    ? '2px solid var(--color-accent)'
-                    : '1.5px solid var(--color-border-subtle)',
-                  backgroundColor: blockingScheduleMode === opt.value
-                    ? 'var(--color-accent-soft)'
-                    : 'transparent',
+                  border:
+                    blockingScheduleMode === opt.value
+                      ? '2px solid var(--color-accent)'
+                      : '1.5px solid var(--color-border-subtle)',
+                  backgroundColor:
+                    blockingScheduleMode === opt.value ? 'var(--color-accent-soft)' : 'transparent',
                 }}
               >
                 <div className="font-medium text-sm" style={{ color: 'var(--color-text-primary)' }}>
                   {opt.label}
                 </div>
-                <p className="text-xs text-[var(--color-text-muted)] mt-1">
-                  {opt.desc}
-                </p>
+                <p className="text-xs text-[var(--color-text-muted)] mt-1">{opt.desc}</p>
               </button>
             ))}
           </div>
@@ -161,5 +157,5 @@ export default function DistractionBlockingSection({
         </div>
       </div>
     </Section>
-  )
+  );
 }

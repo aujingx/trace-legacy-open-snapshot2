@@ -1,7 +1,7 @@
-import { useEffect } from 'react'
-import { useFocusModal } from '../App'
-import { useAppStore } from '../store/useAppStore'
-import type { AppState } from '../store/useAppStore'
+import { useEffect } from 'react';
+import { useFocusModal } from '../App';
+import { useAppStore } from '../store/useAppStore';
+import type { AppState } from '../store/useAppStore';
 
 /**
  * Global top-right focus status indicator.
@@ -25,27 +25,27 @@ const STATE_CONFIG: Record<string, { label: string; dotColor: string; pulseColor
     dotColor: 'var(--color-success, #22c55e)',
     pulseColor: 'rgba(34, 197, 94, 0.2)',
   },
-}
+};
 
 function formatMM_SS(totalSeconds: number): string {
-  const m = Math.floor(totalSeconds / 60)
-  const s = totalSeconds % 60
-  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+  const m = Math.floor(totalSeconds / 60);
+  const s = totalSeconds % 60;
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
 export default function FocusStatusIndicator() {
-  const focusState = useAppStore((s: AppState) => s.focusState)
-  const focusTimeLeft = useAppStore((s: AppState) => s.focusTimeLeft)
-  const focusSettings = useAppStore((s: AppState) => s.focusSettings)
-  const { openFocusModal } = useFocusModal()
+  const focusState = useAppStore((s: AppState) => s.focusState);
+  const focusTimeLeft = useAppStore((s: AppState) => s.focusTimeLeft);
+  const focusSettings = useAppStore((s: AppState) => s.focusSettings);
+  const { openFocusModal } = useFocusModal();
 
   // No-op effect just to keep the component reactive to focusTimeLeft changes
-  useEffect(() => {}, [focusTimeLeft])
+  useEffect(() => {}, [focusTimeLeft]);
 
-  if (focusState === 'idle') return null
+  if (focusState === 'idle') return null;
 
-  const config = STATE_CONFIG[focusState]
-  if (!config) return null
+  const config = STATE_CONFIG[focusState];
+  if (!config) return null;
 
   // Calculate elapsed time for this session
   const totalSeconds =
@@ -53,8 +53,8 @@ export default function FocusStatusIndicator() {
       ? focusSettings.workMinutes * 60
       : focusState === 'break'
         ? focusSettings.breakMinutes * 60
-        : focusSettings.longBreakMinutes * 60
-  const elapsedSeconds = totalSeconds - focusTimeLeft
+        : focusSettings.longBreakMinutes * 60;
+  const elapsedSeconds = totalSeconds - focusTimeLeft;
 
   return (
     <button
@@ -81,10 +81,7 @@ export default function FocusStatusIndicator() {
       </span>
 
       {/* Label */}
-      <span
-        className="text-xs font-semibold whitespace-nowrap"
-        style={{ color: config.dotColor }}
-      >
+      <span className="text-xs font-semibold whitespace-nowrap" style={{ color: config.dotColor }}>
         {config.label}
       </span>
 
@@ -113,5 +110,5 @@ export default function FocusStatusIndicator() {
         }
       `}</style>
     </button>
-  )
+  );
 }

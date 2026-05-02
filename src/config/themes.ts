@@ -2,17 +2,17 @@
 // Figma reference: Coral Pink primary + Pastel Macaron secondary palette
 // Typography: Quicksand (headings), Plus Jakarta Sans (body), JetBrains Mono (code/labels)
 
-export type Theme = 'light' | 'dark'
-export type ColorTheme = 'coral' | 'blue' | 'mint' | 'lilac' | 'lemon' | 'pink'
-export type BackgroundSkin = 'gradient' | 'solid' | 'glass'
+export type Theme = 'light' | 'dark';
+export type ColorTheme = 'coral' | 'blue' | 'mint' | 'lilac' | 'lemon' | 'pink';
+export type BackgroundSkin = 'gradient' | 'solid' | 'glass';
 
 export interface ColorThemeConfig {
-  name: string
-  nameEn: string
-  accent: string
-  accentHover: string
-  accentSoft: string
-  description: string
+  name: string;
+  nameEn: string;
+  accent: string;
+  accentHover: string;
+  accentSoft: string;
+  description: string;
 }
 
 export const colorThemeConfigs: Record<ColorTheme, ColorThemeConfig> = {
@@ -64,12 +64,12 @@ export const colorThemeConfigs: Record<ColorTheme, ColorThemeConfig> = {
     accentSoft: 'rgba(255, 181, 212, 0.12)',
     description: '温柔甜美，治愈系配色',
   },
-}
+};
 
 export interface BackgroundSkinConfig {
-  name: string
-  description: string
-  getBgClass: (isDark: boolean) => string
+  name: string;
+  description: string;
+  getBgClass: (isDark: boolean) => string;
 }
 
 export const backgroundSkinConfigs: Record<BackgroundSkin, BackgroundSkinConfig> = {
@@ -84,8 +84,7 @@ export const backgroundSkinConfigs: Record<BackgroundSkin, BackgroundSkinConfig>
   solid: {
     name: '纯净背景',
     description: '纯色背景，干净简洁',
-    getBgClass: (isDark: boolean) =>
-      isDark ? 'bg-[#1A1718]' : 'bg-[#FDFBF7]',
+    getBgClass: (isDark: boolean) => (isDark ? 'bg-[#1A1718]' : 'bg-[#FDFBF7]'),
   },
   glass: {
     name: '玻璃拟态',
@@ -95,35 +94,29 @@ export const backgroundSkinConfigs: Record<BackgroundSkin, BackgroundSkinConfig>
         ? 'bg-gradient-to-br from-[#1A1718] to-[#221E20]'
         : 'bg-gradient-to-br from-[#FDFBF7] to-[#FAF2E8]',
   },
-}
+};
 
 // Category colors — using macaron palette
 export const CATEGORY_COLORS: Record<string, string> = {
-  '开发': 'var(--color-blue)',    // Macaron Blue
-  '工作': 'var(--color-coral)',    // Coral Pink
-  '学习': 'var(--color-purple)',    // Macaron Lilac
-  '会议': 'var(--color-blue)',    // Macaron Blue
-  '休息': 'var(--color-green)',    // Macaron Mint
-  '娱乐': 'var(--color-lemon)',    // Macaron Lemon
-  '运动': 'var(--color-coral)',    // Coral Pink
-  '阅读': 'var(--color-green)',    // Macaron Mint
-  '其他': 'var(--color-text-muted)',    // Muted gray
-}
+  开发: 'var(--color-blue)', // Macaron Blue
+  工作: 'var(--color-coral)', // Coral Pink
+  学习: 'var(--color-purple)', // Macaron Lilac
+  会议: 'var(--color-blue)', // Macaron Blue
+  休息: 'var(--color-green)', // Macaron Mint
+  娱乐: 'var(--color-lemon)', // Macaron Lemon
+  运动: 'var(--color-coral)', // Coral Pink
+  阅读: 'var(--color-green)', // Macaron Mint
+  其他: 'var(--color-text-muted)', // Muted gray
+};
 
 // Priority colors — warm macaron gradient from low to high
 export const PRIORITY_COLORS: Record<number, string> = {
-  1: 'var(--color-text-muted)',    // Muted
-  2: 'var(--color-blue)',    // Blue
-  3: 'var(--color-lemon)',    // Lemon
-  4: 'var(--color-coral)',    // Coral
-  5: 'var(--color-coral-hover)',    // Coral hover (urgent)
-}
+  1: 'var(--color-text-muted)', // Muted
+  2: 'var(--color-blue)', // Blue
+  3: 'var(--color-lemon)', // Lemon
+  4: 'var(--color-coral)', // Coral
+  5: 'var(--color-coral-hover)', // Coral hover (urgent)
+};
 
 // Default feature modules (V1 — 5 tabs)
-export const DEFAULT_MODULES = [
-  'dashboard',
-  'timeline',
-  'task',
-  'analytics',
-  'settings',
-]
+export const DEFAULT_MODULES = ['dashboard', 'timeline', 'task', 'analytics', 'settings'];

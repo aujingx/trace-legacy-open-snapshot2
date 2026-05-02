@@ -1,5 +1,5 @@
-import { AlertTriangle, HelpCircle, Info } from 'lucide-react'
-import { Modal } from './ui'
+import { AlertTriangle, HelpCircle, Info } from 'lucide-react';
+import { Modal } from './ui';
 
 /**
  * Reusable confirmation dialog for destructive / important actions.
@@ -7,28 +7,28 @@ import { Modal } from './ui'
  */
 
 interface ConfirmDialogProps {
-  isOpen: boolean
-  onClose: () => void
-  onConfirm: () => void
-  title: string
-  message: string
-  confirmText?: string
-  cancelText?: string
-  variant?: 'danger' | 'warning' | 'info'
-  icon?: React.ReactNode
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  title: string;
+  message: string;
+  confirmText?: string;
+  cancelText?: string;
+  variant?: 'danger' | 'warning' | 'info';
+  icon?: React.ReactNode;
 }
 
 const variantStyles: Record<string, { color: string; bg: string }> = {
   danger: { color: '#ef4444', bg: 'rgba(239, 68, 68, 0.1)' },
   warning: { color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.1)' },
   info: { color: 'var(--color-accent)', bg: 'var(--color-accent-soft)' },
-}
+};
 
 const defaultIcons: Record<string, React.ReactNode> = {
   danger: <AlertTriangle size={28} />,
   warning: <HelpCircle size={28} />,
   info: <Info size={28} />,
-}
+};
 
 export default function ConfirmDialog({
   isOpen,
@@ -41,8 +41,8 @@ export default function ConfirmDialog({
   variant = 'danger',
   icon,
 }: ConfirmDialogProps) {
-  const style = variantStyles[variant]
-  const displayIcon = icon || defaultIcons[variant]
+  const style = variantStyles[variant];
+  const displayIcon = icon || defaultIcons[variant];
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="sm">
@@ -57,10 +57,7 @@ export default function ConfirmDialog({
 
         {/* Title & message */}
         <div>
-          <h3
-            className="text-base font-bold"
-            style={{ color: 'var(--color-text-primary)' }}
-          >
+          <h3 className="text-base font-bold" style={{ color: 'var(--color-text-primary)' }}>
             {title}
           </h3>
           <p
@@ -81,18 +78,18 @@ export default function ConfirmDialog({
               color: 'var(--color-text-secondary)',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'var(--color-border-subtle)'
+              e.currentTarget.style.background = 'var(--color-border-subtle)';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'var(--color-bg-surface-2)'
+              e.currentTarget.style.background = 'var(--color-bg-surface-2)';
             }}
           >
             {cancelText}
           </button>
           <button
             onClick={() => {
-              onConfirm()
-              onClose()
+              onConfirm();
+              onClose();
             }}
             className="px-5 py-2 rounded-full text-sm font-semibold text-white transition-all duration-150 hover:opacity-90"
             style={{
@@ -105,5 +102,5 @@ export default function ConfirmDialog({
         </div>
       </div>
     </Modal>
-  )
+  );
 }

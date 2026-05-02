@@ -1,14 +1,14 @@
-import { useState, useRef, useEffect } from 'react'
-import { Check, X } from 'lucide-react'
-import { getPriorityConfig, STATUS_CONFIG } from '../../constants/task'
-import type { TaskStatus } from '../../services/dataService'
+import { useState, useRef, useEffect } from 'react';
+import { Check, X } from 'lucide-react';
+import { getPriorityConfig, STATUS_CONFIG } from '../../constants/task';
+import type { TaskStatus } from '../../services/dataService';
 
 interface InlineEditProps {
-  value: string
-  onSave: (value: string) => void
-  onCancel?: () => void
-  type?: 'text' | 'select' | 'priority' | 'status' | 'date'
-  placeholder?: string
+  value: string;
+  onSave: (value: string) => void;
+  onCancel?: () => void;
+  type?: 'text' | 'select' | 'priority' | 'status' | 'date';
+  placeholder?: string;
 }
 
 export default function InlineEdit({
@@ -18,40 +18,40 @@ export default function InlineEdit({
   type = 'text',
   placeholder,
 }: InlineEditProps) {
-  const [isEditing, setIsEditing] = useState(false)
-  const [editValue, setEditValue] = useState(value)
-  const inputRef = useRef<HTMLInputElement>(null)
-  const selectRef = useRef<HTMLSelectElement>(null)
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValue, setEditValue] = useState(value);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const selectRef = useRef<HTMLSelectElement>(null);
 
   useEffect(() => {
     if (isEditing) {
       if (type === 'text') {
-        inputRef.current?.focus()
-        inputRef.current?.select()
+        inputRef.current?.focus();
+        inputRef.current?.select();
       } else {
-        selectRef.current?.focus()
+        selectRef.current?.focus();
       }
     }
-  }, [isEditing, type])
+  }, [isEditing, type]);
 
   const handleSave = () => {
-    onSave(editValue)
-    setIsEditing(false)
-  }
+    onSave(editValue);
+    setIsEditing(false);
+  };
 
   const handleCancel = () => {
-    setEditValue(value)
-    onCancel?.()
-    setIsEditing(false)
-  }
+    setEditValue(value);
+    onCancel?.();
+    setIsEditing(false);
+  };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
-      handleSave()
+      handleSave();
     } else if (e.key === 'Escape') {
-      handleCancel()
+      handleCancel();
     }
-  }
+  };
 
   if (!isEditing) {
     return (
@@ -63,7 +63,10 @@ export default function InlineEdit({
           type === 'priority' ? (
             <span
               className="px-2 py-0.5 rounded-md text-xs font-semibold"
-              style={{ background: getPriorityConfig(Number(value)).bg, color: getPriorityConfig(Number(value)).text }}
+              style={{
+                background: getPriorityConfig(Number(value)).bg,
+                color: getPriorityConfig(Number(value)).text,
+              }}
             >
               P{value}
             </span>
@@ -85,7 +88,7 @@ export default function InlineEdit({
           </span>
         )}
       </div>
-    )
+    );
   }
 
   if (type === 'text') {
@@ -99,7 +102,7 @@ export default function InlineEdit({
           onKeyDown={handleKeyDown}
           className="flex-1 px-2 py-1.5 rounded-lg text-sm outline-none"
           style={{
-            background: '#FAF8F5',
+            background: 'var(--color-bg-surface-1)',
             border: '2px solid var(--color-blue)',
             color: 'var(--color-text-primary)',
           }}
@@ -120,7 +123,7 @@ export default function InlineEdit({
           <X size={14} style={{ color: 'var(--color-text-muted)' }} />
         </button>
       </div>
-    )
+    );
   }
 
   if (type === 'date') {
@@ -134,7 +137,7 @@ export default function InlineEdit({
           onKeyDown={handleKeyDown}
           className="flex-1 px-2 py-1.5 rounded-lg text-sm outline-none"
           style={{
-            background: '#FAF8F5',
+            background: 'var(--color-bg-surface-1)',
             border: '2px solid var(--color-blue)',
             color: 'var(--color-text-primary)',
           }}
@@ -154,7 +157,7 @@ export default function InlineEdit({
           <X size={14} style={{ color: 'var(--color-text-muted)' }} />
         </button>
       </div>
-    )
+    );
   }
 
   if (type === 'priority') {
@@ -164,13 +167,13 @@ export default function InlineEdit({
           ref={selectRef}
           value={editValue}
           onChange={(e) => {
-            setEditValue(e.target.value)
-            onSave(e.target.value)
+            setEditValue(e.target.value);
+            onSave(e.target.value);
           }}
           onBlur={handleCancel}
           className="flex-1 px-2 py-1.5 rounded-lg text-sm outline-none cursor-pointer"
           style={{
-            background: '#FAF8F5',
+            background: 'var(--color-bg-surface-1)',
             border: '2px solid var(--color-blue)',
             color: 'var(--color-text-primary)',
           }}
@@ -182,7 +185,7 @@ export default function InlineEdit({
           ))}
         </select>
       </div>
-    )
+    );
   }
 
   if (type === 'status') {
@@ -192,28 +195,26 @@ export default function InlineEdit({
           ref={selectRef}
           value={editValue}
           onChange={(e) => {
-            setEditValue(e.target.value)
-            onSave(e.target.value)
+            setEditValue(e.target.value);
+            onSave(e.target.value);
           }}
           onBlur={handleCancel}
           className="flex-1 px-2 py-1.5 rounded-lg text-sm outline-none cursor-pointer"
           style={{
-            background: '#FAF8F5',
+            background: 'var(--color-bg-surface-1)',
             border: '2px solid var(--color-blue)',
             color: 'var(--color-text-primary)',
           }}
         >
-          {(['todo', 'in_progress', 'paused', 'completed', 'archived'] as const).map(
-            (status) => (
-              <option key={status} value={status}>
-                {STATUS_CONFIG[status].label}
-              </option>
-            )
-          )}
+          {(['todo', 'in_progress', 'paused', 'completed', 'archived'] as const).map((status) => (
+            <option key={status} value={status}>
+              {STATUS_CONFIG[status].label}
+            </option>
+          ))}
         </select>
       </div>
-    )
+    );
   }
 
-  return null
+  return null;
 }

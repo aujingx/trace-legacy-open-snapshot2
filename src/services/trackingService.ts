@@ -114,16 +114,86 @@ function convertRustActivity(rust: RustActivity): Activity {
  */
 function getDefaultRules(): TrackingRule[] {
   return [
-    { id: 'rule-default-1', appName: 'Chrome', titleKeyword: 'YouTube', targetCategory: '娱乐', priority: 10, createdAt: '2026-01-01T00:00:00' },
-    { id: 'rule-default-2', appName: 'Chrome', titleKeyword: 'GitHub', targetCategory: '开发', priority: 10, createdAt: '2026-01-01T00:00:00' },
-    { id: 'rule-default-3', appName: 'Chrome', titleKeyword: 'Stack Overflow', targetCategory: '学习', priority: 10, createdAt: '2026-01-01T00:00:00' },
-    { id: 'rule-default-4', appName: 'Chrome', titleKeyword: '掘金', targetCategory: '学习', priority: 8, createdAt: '2026-01-01T00:00:00' },
-    { id: 'rule-default-5', appName: 'Chrome', titleKeyword: '淘宝', targetCategory: '其他', priority: 5, createdAt: '2026-01-01T00:00:00' },
-    { id: 'rule-default-6', appName: 'Chrome', titleKeyword: '京东', targetCategory: '其他', priority: 5, createdAt: '2026-01-01T00:00:00' },
-    { id: 'rule-default-7', appName: 'Chrome', titleKeyword: '微博', targetCategory: '娱乐', priority: 6, createdAt: '2026-01-01T00:00:00' },
-    { id: 'rule-default-8', appName: 'Bilibili', titleKeyword: undefined, targetCategory: '学习', priority: 3, createdAt: '2026-01-01T00:00:00' },
-    { id: 'rule-default-9', appName: 'VS Code', titleKeyword: undefined, targetCategory: '开发', priority: 2, createdAt: '2026-01-01T00:00:00' },
-    { id: 'rule-default-10', appName: '腾讯会议', titleKeyword: undefined, targetCategory: '会议', priority: 2, createdAt: '2026-01-01T00:00:00' },
+    {
+      id: 'rule-default-1',
+      appName: 'Chrome',
+      titleKeyword: 'YouTube',
+      targetCategory: '娱乐',
+      priority: 10,
+      createdAt: '2026-01-01T00:00:00',
+    },
+    {
+      id: 'rule-default-2',
+      appName: 'Chrome',
+      titleKeyword: 'GitHub',
+      targetCategory: '开发',
+      priority: 10,
+      createdAt: '2026-01-01T00:00:00',
+    },
+    {
+      id: 'rule-default-3',
+      appName: 'Chrome',
+      titleKeyword: 'Stack Overflow',
+      targetCategory: '学习',
+      priority: 10,
+      createdAt: '2026-01-01T00:00:00',
+    },
+    {
+      id: 'rule-default-4',
+      appName: 'Chrome',
+      titleKeyword: '掘金',
+      targetCategory: '学习',
+      priority: 8,
+      createdAt: '2026-01-01T00:00:00',
+    },
+    {
+      id: 'rule-default-5',
+      appName: 'Chrome',
+      titleKeyword: '淘宝',
+      targetCategory: '其他',
+      priority: 5,
+      createdAt: '2026-01-01T00:00:00',
+    },
+    {
+      id: 'rule-default-6',
+      appName: 'Chrome',
+      titleKeyword: '京东',
+      targetCategory: '其他',
+      priority: 5,
+      createdAt: '2026-01-01T00:00:00',
+    },
+    {
+      id: 'rule-default-7',
+      appName: 'Chrome',
+      titleKeyword: '微博',
+      targetCategory: '娱乐',
+      priority: 6,
+      createdAt: '2026-01-01T00:00:00',
+    },
+    {
+      id: 'rule-default-8',
+      appName: 'Bilibili',
+      titleKeyword: undefined,
+      targetCategory: '学习',
+      priority: 3,
+      createdAt: '2026-01-01T00:00:00',
+    },
+    {
+      id: 'rule-default-9',
+      appName: 'VS Code',
+      titleKeyword: undefined,
+      targetCategory: '开发',
+      priority: 2,
+      createdAt: '2026-01-01T00:00:00',
+    },
+    {
+      id: 'rule-default-10',
+      appName: '腾讯会议',
+      titleKeyword: undefined,
+      targetCategory: '会议',
+      priority: 2,
+      createdAt: '2026-01-01T00:00:00',
+    },
   ];
 }
 
@@ -180,7 +250,11 @@ class TrackingService {
 
   private notify(): void {
     for (const fn of this.listeners) {
-      try { fn({ ...this.state }); } catch { /* swallow listener errors */ }
+      try {
+        fn({ ...this.state });
+      } catch {
+        /* swallow listener errors */
+      }
     }
   }
 
@@ -188,7 +262,7 @@ class TrackingService {
   subscribe(listener: (state: TrackingState) => void): () => void {
     this.listeners.push(listener);
     return () => {
-      this.listeners = this.listeners.filter(fn => fn !== listener);
+      this.listeners = this.listeners.filter((fn) => fn !== listener);
     };
   }
 
@@ -333,12 +407,18 @@ class TrackingService {
 
   removeRule(ruleId: string): void {
     const rules = ensureRulesInitialized();
-    saveJSON(STORAGE_KEYS.rules, rules.filter(r => r.id !== ruleId));
+    saveJSON(
+      STORAGE_KEYS.rules,
+      rules.filter((r) => r.id !== ruleId)
+    );
   }
 
-  updateRule(ruleId: string, updates: Partial<Omit<TrackingRule, 'id' | 'createdAt'>>): TrackingRule {
+  updateRule(
+    ruleId: string,
+    updates: Partial<Omit<TrackingRule, 'id' | 'createdAt'>>
+  ): TrackingRule {
     const rules = ensureRulesInitialized();
-    const idx = rules.findIndex(r => r.id === ruleId);
+    const idx = rules.findIndex((r) => r.id === ruleId);
     if (idx === -1) throw new Error(`Tracking rule not found: ${ruleId}`);
     rules[idx] = { ...rules[idx], ...updates };
     saveJSON(STORAGE_KEYS.rules, rules);

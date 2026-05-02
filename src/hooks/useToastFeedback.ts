@@ -1,4 +1,4 @@
-import { useToast } from '../components/ui/Toast'
+import { useToast } from '../components/ui/Toast';
 
 /**
  * 统一的 Toast 反馈 Hook
@@ -7,7 +7,7 @@ import { useToast } from '../components/ui/Toast'
  * 确保所有页面的交互反馈风格一致
  */
 export function useToastFeedback() {
-  const { toast } = useToast()
+  const { toast } = useToast();
 
   return {
     /**
@@ -38,5 +38,5 @@ export function useToastFeedback() {
      * 原始 toast 方法，用于自定义场景
      */
     toast,
-  }
+  };
 }

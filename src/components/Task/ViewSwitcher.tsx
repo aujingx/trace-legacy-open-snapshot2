@@ -1,23 +1,21 @@
-import { useState } from 'react'
-import { List, LayoutGrid, Table, Calendar, ChevronDown } from 'lucide-react'
+import { useState } from 'react';
+import { List, LayoutGrid, ChevronDown } from 'lucide-react';
 
-export type ViewMode = 'list' | 'board' | 'table' | 'calendar'
+export type ViewMode = 'list' | 'board';
 
 interface ViewSwitcherProps {
-  currentView: ViewMode
-  onViewChange: (view: ViewMode) => void
+  currentView: ViewMode;
+  onViewChange: (view: ViewMode) => void;
 }
 
 const VIEW_OPTIONS: { key: ViewMode; label: string; icon: React.ReactNode }[] = [
   { key: 'list', label: '列表', icon: <List size={16} /> },
   { key: 'board', label: '看板', icon: <LayoutGrid size={16} /> },
-  { key: 'table', label: '表格', icon: <Table size={16} /> },
-  { key: 'calendar', label: '日历', icon: <Calendar size={16} /> },
-]
+];
 
 export default function ViewSwitcher({ currentView, onViewChange }: ViewSwitcherProps) {
-  const [isOpen, setIsOpen] = useState(false)
-  const currentOption = VIEW_OPTIONS.find((v) => v.key === currentView) || VIEW_OPTIONS[0]
+  const [isOpen, setIsOpen] = useState(false);
+  const currentOption = VIEW_OPTIONS.find((v) => v.key === currentView) || VIEW_OPTIONS[0];
 
   return (
     <div className="relative">
@@ -56,13 +54,14 @@ export default function ViewSwitcher({ currentView, onViewChange }: ViewSwitcher
             <button
               key={option.key}
               onClick={() => {
-                onViewChange(option.key)
-                setIsOpen(false)
+                onViewChange(option.key);
+                setIsOpen(false);
               }}
               className="w-full flex items-center gap-2 px-4 py-2.5 text-left transition-all"
               style={{
                 background: currentView === option.key ? 'var(--color-blue)15' : 'transparent',
-                color: currentView === option.key ? 'var(--color-blue)' : 'var(--color-text-primary)',
+                color:
+                  currentView === option.key ? 'var(--color-blue)' : 'var(--color-text-primary)',
               }}
             >
               <span className="opacity-60">{option.icon}</span>
@@ -72,5 +71,5 @@ export default function ViewSwitcher({ currentView, onViewChange }: ViewSwitcher
         </div>
       )}
     </div>
-  )
+  );
 }

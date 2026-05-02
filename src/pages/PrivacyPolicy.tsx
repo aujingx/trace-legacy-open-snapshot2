@@ -1,8 +1,8 @@
-import { useTranslation } from 'react-i18next'
-import { Shield } from 'lucide-react'
+import { useTranslation } from 'react-i18next';
+import { Shield } from 'lucide-react';
 
 export default function PrivacyPolicy() {
-  const { t } = useTranslation()
+  const { t } = useTranslation();
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
@@ -18,7 +18,10 @@ export default function PrivacyPolicy() {
         </p>
       </div>
 
-      <div className="space-y-8 text-base leading-relaxed" style={{ color: 'var(--color-text-primary)' }}>
+      <div
+        className="space-y-8 text-base leading-relaxed"
+        style={{ color: 'var(--color-text-primary)' }}
+      >
         <section>
           <h2 className="text-xl font-semibold mb-4" style={{ color: 'var(--color-text-primary)' }}>
             {t('privacy.introTitle')}
@@ -35,7 +38,10 @@ export default function PrivacyPolicy() {
           <p className="mb-3" style={{ color: 'var(--color-text-secondary)' }}>
             {t('privacy.collectionText1')}
           </p>
-          <ul className="list-disc pl-6 mb-4 space-y-2" style={{ color: 'var(--color-text-secondary)' }}>
+          <ul
+            className="list-disc pl-6 mb-4 space-y-2"
+            style={{ color: 'var(--color-text-secondary)' }}
+          >
             <li>{t('privacy.collectionItem1')}</li>
             <li>{t('privacy.collectionItem2')}</li>
             <li>{t('privacy.collectionItem3')}</li>
@@ -68,7 +74,10 @@ export default function PrivacyPolicy() {
           <p className="mb-3" style={{ color: 'var(--color-text-secondary)' }}>
             {t('privacy.userRightsText')}
           </p>
-          <ul className="list-disc pl-6 mb-4 space-y-2" style={{ color: 'var(--color-text-secondary)' }}>
+          <ul
+            className="list-disc pl-6 mb-4 space-y-2"
+            style={{ color: 'var(--color-text-secondary)' }}
+          >
             <li>{t('privacy.userRight1')}</li>
             <li>{t('privacy.userRight2')}</li>
             <li>{t('privacy.userRight3')}</li>
@@ -114,5 +123,5 @@ export default function PrivacyPolicy() {
         </section>
       </div>
     </div>
-  )
+  );
 }

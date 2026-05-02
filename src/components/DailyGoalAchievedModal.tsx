@@ -1,12 +1,12 @@
-import { useEffect, useState, useRef } from 'react'
-import { X, Trophy, Target, Clock, Share2, Download, Image as ImageIcon } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useState, useRef } from 'react';
+import { X, Trophy, Target, Clock, Share2, Download, Image as ImageIcon } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface Props {
-  isOpen: boolean
-  onClose: () => void
-  totalMinutes: number
-  goalMinutes: number
+  isOpen: boolean;
+  onClose: () => void;
+  totalMinutes: number;
+  goalMinutes: number;
 }
 
 // 🎨 分享卡片主题配置 - Canvas 生成图片使用，必须使用十六进制颜色
@@ -20,7 +20,7 @@ const CARD_THEMES = [
   { name: '极光', colors: ['#667eea', '#764ba2', '#f093fb'], accent: '#FFFFFF' },
   { name: '暖阳', colors: ['#f093fb', '#f5576c', '#fee140'], accent: '#FFFFFF' },
   { name: '薄荷', colors: ['#43e97b', '#38f9d7', '#00c6fb'], accent: '#FFFFFF' },
-]
+];
 /* eslint-enable no-restricted-syntax */
 
 // ✨ 随机文案库
@@ -35,7 +35,7 @@ const CARD_TITLES = [
   '🌈 又进步了一点点',
   '🔥 专注达人就是你',
   '💫 时间看得见',
-]
+];
 
 const ENCOURAGEMENTS = [
   '太棒了！今天的你超棒 🌟',
@@ -50,7 +50,7 @@ const ENCOURAGEMENTS = [
   '每一分钟都有价值 💎',
   '今天也是努力的一天呀 🌻',
   '你的坚持，终将美好 🌸',
-]
+];
 
 const BOTTOM_SLOGANS = [
   'Getting better each day',
@@ -61,16 +61,16 @@ const BOTTOM_SLOGANS = [
   '日积跬步，以至千里',
   '专注当下，成就未来',
   '和更好的自己相遇',
-]
+];
 
 // 从数组中随机选择一项
 function pickRandom<T>(arr: T[]): T {
-  return arr[Math.floor(Math.random() * arr.length)]
+  return arr[Math.floor(Math.random() * arr.length)];
 }
 
 // 🎨 生成精美的分享卡片（Canvas 实现）
 // Canvas API 不支持 CSS 变量，必须使用硬编码颜色
- 
+
 function generateShareCard(
   hours: number,
   mins: number,
@@ -78,184 +78,204 @@ function generateShareCard(
   dateStr: string
 ): Promise<string> {
   return new Promise((resolve) => {
-    const canvas = document.createElement('canvas')
-    const ctx = canvas.getContext('2d')!
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d')!;
 
     // 卡片尺寸 - 适合小红书/朋友圈分享
-    canvas.width = 800
-    canvas.height = 1000
+    canvas.width = 800;
+    canvas.height = 1000;
 
     // 🎲 随机选择主题 + 文案
-    const theme = pickRandom(CARD_THEMES)
-    const title = pickRandom(CARD_TITLES)
-    const encouragement = pickRandom(ENCOURAGEMENTS)
-    const slogan = pickRandom(BOTTOM_SLOGANS)
+    const theme = pickRandom(CARD_THEMES);
+    const title = pickRandom(CARD_TITLES);
+    const encouragement = pickRandom(ENCOURAGEMENTS);
+    const slogan = pickRandom(BOTTOM_SLOGANS);
 
     // 背景渐变
-    const gradient = ctx.createLinearGradient(0, 0, 800, 1000)
-    gradient.addColorStop(0, theme.colors[0])
-    gradient.addColorStop(0.5, theme.colors[1])
-    gradient.addColorStop(1, theme.colors[2])
-    ctx.fillStyle = gradient
-    ctx.fillRect(0, 0, 800, 1000)
+    const gradient = ctx.createLinearGradient(0, 0, 800, 1000);
+    gradient.addColorStop(0, theme.colors[0]);
+    gradient.addColorStop(0.5, theme.colors[1]);
+    gradient.addColorStop(1, theme.colors[2]);
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, 800, 1000);
 
     // 装饰性圆形
-    ctx.globalAlpha = 0.15
-    ctx.beginPath()
-    ctx.arc(650, 120, 180, 0, Math.PI * 2)
-    ctx.fillStyle = '#FFFFFF'
-    ctx.fill()
-    ctx.beginPath()
-    ctx.arc(100, 850, 140, 0, Math.PI * 2)
-    ctx.fillStyle = '#FFFFFF'
-    ctx.fill()
-    ctx.globalAlpha = 1
+    ctx.globalAlpha = 0.15;
+    ctx.beginPath();
+    ctx.arc(650, 120, 180, 0, Math.PI * 2);
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(100, 850, 140, 0, Math.PI * 2);
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fill();
+    ctx.globalAlpha = 1;
 
     // 白色卡片容器
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.92)'
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.1)'
-    ctx.shadowBlur = 30
-    ctx.shadowOffsetY = 10
-    roundRect(ctx, 60, 80, 680, 840, 40)
-    ctx.fill()
-    ctx.shadowColor = 'transparent'
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.1)';
+    ctx.shadowBlur = 30;
+    ctx.shadowOffsetY = 10;
+    roundRect(ctx, 60, 80, 680, 840, 40);
+    ctx.fill();
+    ctx.shadowColor = 'transparent';
 
     // 🏆 Trophy 图标位置
-    ctx.fillStyle = theme.accent
-    ctx.beginPath()
-    ctx.arc(400, 220, 60, 0, Math.PI * 2)
-    ctx.fill()
+    ctx.fillStyle = theme.accent;
+    ctx.beginPath();
+    ctx.arc(400, 220, 60, 0, Math.PI * 2);
+    ctx.fill();
 
     // Trophy 简化图标
-    ctx.strokeStyle = '#FFFFFF'
-    ctx.lineWidth = 8
-    ctx.lineCap = 'round'
-    ctx.beginPath()
-    ctx.moveTo(360, 200)
-    ctx.lineTo(440, 200)
-    ctx.lineTo(430, 250)
-    ctx.lineTo(370, 250)
-    ctx.closePath()
-    ctx.stroke()
+    ctx.strokeStyle = '#FFFFFF';
+    ctx.lineWidth = 8;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(360, 200);
+    ctx.lineTo(440, 200);
+    ctx.lineTo(430, 250);
+    ctx.lineTo(370, 250);
+    ctx.closePath();
+    ctx.stroke();
 
     // 标题
-    ctx.fillStyle = '#3A3638'
-    ctx.font = 'bold 44px Quicksand, sans-serif'
-    ctx.textAlign = 'center'
-    ctx.fillText(title, 400, 350)
+    ctx.fillStyle = '#3A3638';
+    ctx.font = 'bold 44px Quicksand, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(title, 400, 350);
 
     // 日期
-    ctx.fillStyle = '#9E9899'
-    ctx.font = '24px sans-serif'
-    ctx.fillText(dateStr, 400, 400)
+    ctx.fillStyle = '#9E9899';
+    ctx.font = '24px sans-serif';
+    ctx.fillText(dateStr, 400, 400);
 
     // 数据卡片 - 专注时长
-    ctx.fillStyle = 'rgba(121, 190, 235, 0.2)'
-    roundRect(ctx, 100, 450, 260, 150, 24)
-    ctx.fill()
+    ctx.fillStyle = 'rgba(121, 190, 235, 0.2)';
+    roundRect(ctx, 100, 450, 260, 150, 24);
+    ctx.fill();
 
-    ctx.fillStyle = '#2A4A5E'
-    ctx.font = 'bold 56px Quicksand, sans-serif'
-    ctx.fillText(`${hours}h ${mins}m`, 230, 540)
+    ctx.fillStyle = '#2A4A5E';
+    ctx.font = 'bold 56px Quicksand, sans-serif';
+    ctx.fillText(`${hours}h ${mins}m`, 230, 540);
 
-    ctx.fillStyle = '#9E9899'
-    ctx.font = '22px sans-serif'
-    ctx.fillText('专注时长', 230, 575)
+    ctx.fillStyle = '#9E9899';
+    ctx.font = '22px sans-serif';
+    ctx.fillText('专注时长', 230, 575);
 
     // 数据卡片 - 目标完成
-    ctx.fillStyle = 'rgba(168, 230, 207, 0.2)'
-    roundRect(ctx, 440, 450, 260, 150, 24)
-    ctx.fill()
+    ctx.fillStyle = 'rgba(168, 230, 207, 0.2)';
+    roundRect(ctx, 440, 450, 260, 150, 24);
+    ctx.fill();
 
-    ctx.fillStyle = '#2D5A4A'
-    ctx.font = 'bold 56px Quicksand, sans-serif'
-    ctx.fillText(`${completionPercent}%`, 570, 540)
+    ctx.fillStyle = '#2D5A4A';
+    ctx.font = 'bold 56px Quicksand, sans-serif';
+    ctx.fillText(`${completionPercent}%`, 570, 540);
 
-    ctx.fillStyle = '#9E9899'
-    ctx.font = '22px sans-serif'
-    ctx.fillText('目标完成', 570, 575)
+    ctx.fillStyle = '#9E9899';
+    ctx.font = '22px sans-serif';
+    ctx.fillText('目标完成', 570, 575);
 
     // 进度条背景
-    ctx.fillStyle = '#E8E6E1'
-    roundRect(ctx, 100, 660, 600, 24, 12)
-    ctx.fill()
+    ctx.fillStyle = '#E8E6E1';
+    roundRect(ctx, 100, 660, 600, 24, 12);
+    ctx.fill();
 
     // 进度条填充
-    const progressWidth = Math.min(600, (completionPercent / 100) * 600)
-    const progressGradient = ctx.createLinearGradient(100, 0, 700, 0)
-    progressGradient.addColorStop(0, '#79BEEB')
-    progressGradient.addColorStop(1, '#D4C4FB')
-    ctx.fillStyle = progressGradient
-    roundRect(ctx, 100, 660, progressWidth, 24, 12)
-    ctx.fill()
+    const progressWidth = Math.min(600, (completionPercent / 100) * 600);
+    const progressGradient = ctx.createLinearGradient(100, 0, 700, 0);
+    progressGradient.addColorStop(0, '#79BEEB');
+    progressGradient.addColorStop(1, '#D4C4FB');
+    ctx.fillStyle = progressGradient;
+    roundRect(ctx, 100, 660, progressWidth, 24, 12);
+    ctx.fill();
 
     // 鼓励语
-    ctx.fillStyle = '#5C5658'
-    ctx.font = '26px sans-serif'
-    ctx.fillText(encouragement, 400, 740)
+    ctx.fillStyle = '#5C5658';
+    ctx.font = '26px sans-serif';
+    ctx.fillText(encouragement, 400, 740);
 
     // 底部 Slogan
-    ctx.fillStyle = theme.colors[1]
-    ctx.font = 'bold 20px sans-serif'
-    ctx.fillText('Trace · 追踪你的每一分钟', 400, 820)
+    ctx.fillStyle = theme.colors[1];
+    ctx.font = 'bold 20px sans-serif';
+    ctx.fillText('Trace · 追踪你的每一分钟', 400, 820);
 
-    ctx.fillStyle = '#C0C0C0'
-    ctx.font = '16px sans-serif'
-    ctx.fillText(`「${theme.name}」主题 · ${slogan}`, 400, 855)
+    ctx.fillStyle = '#C0C0C0';
+    ctx.font = '16px sans-serif';
+    ctx.fillText(`「${theme.name}」主题 · ${slogan}`, 400, 855);
 
-    resolve(canvas.toDataURL('image/png', 0.95))
-  })
+    resolve(canvas.toDataURL('image/png', 0.95));
+  });
 }
- 
 
 // 辅助函数：绘制圆角矩形
-function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
-  ctx.beginPath()
-  ctx.moveTo(x + r, y)
-  ctx.lineTo(x + w - r, y)
-  ctx.quadraticCurveTo(x + w, y, x + w, y + r)
-  ctx.lineTo(x + w, y + h - r)
-  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h)
-  ctx.lineTo(x + r, y + h)
-  ctx.quadraticCurveTo(x, y + h, x, y + h - r)
-  ctx.lineTo(x, y + r)
-  ctx.quadraticCurveTo(x, y, x + r, y)
-  ctx.closePath()
+function roundRect(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  r: number
+) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
 }
 
 // 🎨 分享成就弹窗
-function ShareAchievementModal({ isOpen, onClose, totalMinutes, completionPercent }: { isOpen: boolean; onClose: () => void; totalMinutes: number; completionPercent: number }) {
-  const [generating, setGenerating] = useState(false)
-  const [imageUrl, setImageUrl] = useState<string | null>(null)
-  const linkRef = useRef<HTMLAnchorElement>(null)
-  const hours = Math.floor(totalMinutes / 60)
-  const mins = totalMinutes % 60
+function ShareAchievementModal({
+  isOpen,
+  onClose,
+  totalMinutes,
+  completionPercent,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  totalMinutes: number;
+  completionPercent: number;
+}) {
+  const [generating, setGenerating] = useState(false);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const linkRef = useRef<HTMLAnchorElement>(null);
+  const hours = Math.floor(totalMinutes / 60);
+  const mins = totalMinutes % 60;
 
-  const dateStr = new Date().toLocaleDateString('zh-CN', { month: 'long', day: 'numeric', weekday: 'long' })
+  const dateStr = new Date().toLocaleDateString('zh-CN', {
+    month: 'long',
+    day: 'numeric',
+    weekday: 'long',
+  });
 
   // 生成卡片
   const handleGenerateCard = async () => {
-    setGenerating(true)
+    setGenerating(true);
     try {
-      const url = await generateShareCard(hours, mins, completionPercent, dateStr)
-      setImageUrl(url)
+      const url = await generateShareCard(hours, mins, completionPercent, dateStr);
+      setImageUrl(url);
     } catch (err) {
-      console.error('生成分享卡片失败:', err)
+      console.error('生成分享卡片失败:', err);
     } finally {
-      setGenerating(false)
+      setGenerating(false);
     }
-  }
+  };
 
   // 下载图片
   const handleDownload = () => {
     if (imageUrl && linkRef.current) {
-      linkRef.current.href = imageUrl
-      linkRef.current.download = `Trace-专注成就-${new Date().toISOString().slice(0, 10)}.png`
-      linkRef.current.click()
+      linkRef.current.href = imageUrl;
+      linkRef.current.download = `Trace-专注成就-${new Date().toISOString().slice(0, 10)}.png`;
+      linkRef.current.click();
     }
-  }
+  };
 
-  if (!isOpen) return null
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
@@ -270,18 +290,24 @@ function ShareAchievementModal({ isOpen, onClose, totalMinutes, completionPercen
           onClick={onClose}
           className="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center transition-all z-10"
           style={{ color: 'var(--color-text-secondary)' }}
-          onMouseEnter={(e) => e.currentTarget.style.background = 'var(--color-bg-surface-2)'}
-          onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+          onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--color-bg-surface-2)')}
+          onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
         >
           <X size={18} />
         </button>
 
         <div className="text-center">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #FFD700 0%, #FFA500 100%)' }}>
+          <div
+            className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center"
+            style={{ background: 'linear-gradient(135deg, #FFD700 0%, #FFA500 100%)' }}
+          >
             <Trophy size={32} color="var(--color-bg-surface-1)" />
           </div>
 
-          <h2 className="text-xl font-bold mb-2" style={{ color: 'var(--color-text-primary)', fontFamily: 'Quicksand, sans-serif' }}>
+          <h2
+            className="text-xl font-bold mb-2"
+            style={{ color: 'var(--color-text-primary)', fontFamily: 'Quicksand, sans-serif' }}
+          >
             生成你的成就卡片
           </h2>
           <p className="text-sm mb-6" style={{ color: 'var(--color-text-muted)' }}>
@@ -292,7 +318,8 @@ function ShareAchievementModal({ isOpen, onClose, totalMinutes, completionPercen
           <div
             className="rounded-2xl overflow-hidden mb-6 mx-auto"
             style={{
-              background: 'linear-gradient(135deg, var(--color-blue) 0%, var(--color-purple) 50%, var(--color-lemon) 100%)',
+              background:
+                'linear-gradient(135deg, var(--color-blue) 0%, var(--color-purple) 50%, var(--color-lemon) 100%)',
               aspectRatio: '4/5',
               maxWidth: '320px',
               border: '2px solid var(--color-border-strong)',
@@ -311,13 +338,21 @@ function ShareAchievementModal({ isOpen, onClose, totalMinutes, completionPercen
           {/* 数据摘要 */}
           <div className="flex justify-center gap-8 mb-6">
             <div className="text-center">
-              <p className="text-2xl font-bold" style={{ color: 'var(--color-blue)' }}>{hours}h {mins}m</p>
-              <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>专注时长</p>
+              <p className="text-2xl font-bold" style={{ color: 'var(--color-blue)' }}>
+                {hours}h {mins}m
+              </p>
+              <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+                专注时长
+              </p>
             </div>
             <div className="w-px" style={{ background: 'var(--color-border-strong)' }} />
             <div className="text-center">
-              <p className="text-2xl font-bold" style={{ color: 'var(--color-green)' }}>{completionPercent}%</p>
-              <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>目标完成</p>
+              <p className="text-2xl font-bold" style={{ color: 'var(--color-green)' }}>
+                {completionPercent}%
+              </p>
+              <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+                目标完成
+              </p>
             </div>
           </div>
 
@@ -328,7 +363,10 @@ function ShareAchievementModal({ isOpen, onClose, totalMinutes, completionPercen
                 onClick={handleGenerateCard}
                 disabled={generating}
                 className="w-full py-3.5 px-4 rounded-xl font-semibold text-white transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2"
-                style={{ background: 'linear-gradient(135deg, var(--color-blue) 0%, var(--color-purple) 100%)' }}
+                style={{
+                  background:
+                    'linear-gradient(135deg, var(--color-blue) 0%, var(--color-purple) 100%)',
+                }}
               >
                 {generating ? (
                   <>
@@ -347,7 +385,10 @@ function ShareAchievementModal({ isOpen, onClose, totalMinutes, completionPercen
                 <button
                   onClick={handleDownload}
                   className="w-full py-3.5 px-4 rounded-xl font-semibold text-white transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
-                  style={{ background: 'linear-gradient(135deg, var(--color-green) 0%, var(--color-blue) 100%)' }}
+                  style={{
+                    background:
+                      'linear-gradient(135deg, var(--color-green) 0%, var(--color-blue) 100%)',
+                  }}
                 >
                   <Download size={18} />
                   保存图片
@@ -355,7 +396,10 @@ function ShareAchievementModal({ isOpen, onClose, totalMinutes, completionPercen
                 <button
                   onClick={() => setImageUrl(null)}
                   className="w-full py-3.5 px-4 rounded-xl font-semibold transition-all hover:scale-[1.02] active:scale-[0.98]"
-                  style={{ background: 'var(--color-bg-surface-2)', color: 'var(--color-text-secondary)' }}
+                  style={{
+                    background: 'var(--color-bg-surface-2)',
+                    color: 'var(--color-text-secondary)',
+                  }}
                 >
                   重新生成
                 </button>
@@ -372,30 +416,38 @@ function ShareAchievementModal({ isOpen, onClose, totalMinutes, completionPercen
         <a ref={linkRef} style={{ display: 'none' }} />
       </div>
     </div>
-  )
+  );
 }
 
-export default function DailyGoalAchievedModal({ isOpen, onClose, totalMinutes, goalMinutes }: Props) {
-  const [visible, setVisible] = useState(false)
-  const [showShareModal, setShowShareModal] = useState(false)
-  const navigate = useNavigate()
+export default function DailyGoalAchievedModal({
+  isOpen,
+  onClose,
+  totalMinutes,
+  goalMinutes,
+}: Props) {
+  const [visible, setVisible] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (isOpen) {
-      setVisible(true)
+      setVisible(true);
     }
-  }, [isOpen])
+  }, [isOpen]);
 
-  if (!isOpen || !visible) return null
+  if (!isOpen || !visible) return null;
 
   // 安全限制：单日专注时间不超过24小时
-  const safeMinutes = Math.min(totalMinutes, 24 * 60)
-  const hours = Math.floor(safeMinutes / 60)
-  const mins = safeMinutes % 60
-  const completionPercent = Math.min(100, Math.round((safeMinutes / goalMinutes) * 100))
+  const safeMinutes = Math.min(totalMinutes, 24 * 60);
+  const hours = Math.floor(safeMinutes / 60);
+  const mins = safeMinutes % 60;
+  const completionPercent = Math.min(100, Math.round((safeMinutes / goalMinutes) * 100));
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(58, 54, 56, 0.5)' }}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      style={{ background: 'rgba(58, 54, 56, 0.5)' }}
+    >
       <div
         className="mx-4 max-w-sm w-full transition-all duration-300 scale-100"
         style={{
@@ -411,17 +463,27 @@ export default function DailyGoalAchievedModal({ isOpen, onClose, totalMinutes, 
             <div className="w-8" />
             <div
               className="w-12 h-12 rounded-xl flex items-center justify-center"
-              style={{ background: 'linear-gradient(135deg, var(--color-lemon) 0%, var(--color-coral) 100%)' }}
+              style={{
+                background:
+                  'linear-gradient(135deg, var(--color-lemon) 0%, var(--color-coral) 100%)',
+              }}
             >
               <Trophy size={24} color="white" />
             </div>
-            <button onClick={onClose} className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'var(--color-bg-surface-2)' }}>
+            <button
+              onClick={onClose}
+              className="w-8 h-8 rounded-lg flex items-center justify-center"
+              style={{ background: 'var(--color-bg-surface-2)' }}
+            >
               <X size={16} style={{ color: 'var(--color-text-muted)' }} />
             </button>
           </div>
 
           <div className="text-center">
-            <h2 className="text-xl font-bold mb-2" style={{ color: 'var(--color-text-primary)', fontFamily: 'Quicksand, sans-serif' }}>
+            <h2
+              className="text-xl font-bold mb-2"
+              style={{ color: 'var(--color-text-primary)', fontFamily: 'Quicksand, sans-serif' }}
+            >
               🎉 今日目标达成！
             </h2>
             <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
@@ -433,25 +495,47 @@ export default function DailyGoalAchievedModal({ isOpen, onClose, totalMinutes, 
         {/* Stats */}
         <div className="p-6">
           <div className="grid grid-cols-2 gap-4 mb-6">
-            <div className="p-4 rounded-xl text-center" style={{ background: 'var(--color-blue-soft)' }}>
+            <div
+              className="p-4 rounded-xl text-center"
+              style={{ background: 'var(--color-blue-soft)' }}
+            >
               <Clock size={20} style={{ color: 'var(--color-blue)' }} className="mx-auto mb-2" />
-              <p className="text-2xl font-bold" style={{ color: 'var(--color-info-strong)', fontFamily: 'Quicksand, sans-serif' }}>
+              <p
+                className="text-2xl font-bold"
+                style={{ color: 'var(--color-info-strong)', fontFamily: 'Quicksand, sans-serif' }}
+              >
                 {hours}h {mins}m
               </p>
-              <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>今日专注时长</p>
+              <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+                今日专注时长
+              </p>
             </div>
-            <div className="p-4 rounded-xl text-center" style={{ background: 'var(--color-green-soft)' }}>
+            <div
+              className="p-4 rounded-xl text-center"
+              style={{ background: 'var(--color-green-soft)' }}
+            >
               <Target size={20} style={{ color: 'var(--color-green)' }} className="mx-auto mb-2" />
-              <p className="text-2xl font-bold" style={{ color: 'var(--color-success-strong)', fontFamily: 'Quicksand, sans-serif' }}>
+              <p
+                className="text-2xl font-bold"
+                style={{
+                  color: 'var(--color-success-strong)',
+                  fontFamily: 'Quicksand, sans-serif',
+                }}
+              >
                 {completionPercent}%
               </p>
-              <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>目标完成度</p>
+              <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+                目标完成度
+              </p>
             </div>
           </div>
 
           {/* Category Breakdown */}
           <div className="p-4 rounded-xl mb-6" style={{ background: 'var(--color-bg-surface-2)' }}>
-            <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: 'var(--color-text-muted)' }}>
+            <p
+              className="text-xs font-semibold uppercase tracking-wider mb-3"
+              style={{ color: 'var(--color-text-muted)' }}
+            >
               专注分类
             </p>
             <div className="space-y-3">
@@ -463,14 +547,25 @@ export default function DailyGoalAchievedModal({ isOpen, onClose, totalMinutes, 
               ].map((cat) => (
                 <div key={cat.name} className="flex items-center gap-3">
                   <div className="w-3 h-3 rounded-full" style={{ background: cat.color }} />
-                  <span className="text-xs font-medium w-16" style={{ color: 'var(--color-text-secondary)' }}>{cat.name}</span>
-                  <div className="flex-1 h-2 rounded-full" style={{ background: 'var(--color-border-strong)' }}>
+                  <span
+                    className="text-xs font-medium w-16"
+                    style={{ color: 'var(--color-text-secondary)' }}
+                  >
+                    {cat.name}
+                  </span>
+                  <div
+                    className="flex-1 h-2 rounded-full"
+                    style={{ background: 'var(--color-border-strong)' }}
+                  >
                     <div
                       className="h-full rounded-full"
                       style={{ width: `${cat.pct}%`, background: cat.color }}
                     />
                   </div>
-                  <span className="text-xs font-semibold w-10 text-right" style={{ color: 'var(--color-text-secondary)' }}>
+                  <span
+                    className="text-xs font-semibold w-10 text-right"
+                    style={{ color: 'var(--color-text-secondary)' }}
+                  >
                     {Math.floor(cat.minutes / 60)}h {cat.minutes % 60}m
                   </span>
                 </div>
@@ -482,22 +577,28 @@ export default function DailyGoalAchievedModal({ isOpen, onClose, totalMinutes, 
           <div className="space-y-3">
             <button
               onClick={() => {
-                onClose()
+                onClose();
                 // 📊 跳转到 Analytics 完整报告页面
-                navigate('/analytics')
+                navigate('/analytics');
               }}
               className="w-full py-3 rounded-xl font-semibold text-white transition-all hover:scale-[1.02] active:scale-[0.98]"
-              style={{ background: 'var(--color-blue-gradient)', boxShadow: '4px 4px 0px var(--color-blue-shadow)' }}
+              style={{
+                background: 'var(--color-blue-gradient)',
+                boxShadow: '4px 4px 0px var(--color-blue-shadow)',
+              }}
             >
               查看完整报告
             </button>
             <button
               onClick={() => {
                 // 🎨 打开精美的分享成就弹窗
-                setShowShareModal(true)
+                setShowShareModal(true);
               }}
               className="w-full py-3 rounded-xl font-semibold transition-all hover:scale-[1.02] active:scale-[0.98]"
-              style={{ background: 'var(--color-bg-surface-2)', color: 'var(--color-text-secondary)' }}
+              style={{
+                background: 'var(--color-bg-surface-2)',
+                color: 'var(--color-text-secondary)',
+              }}
             >
               <Share2 size={16} className="inline mr-2" />
               分享成就
@@ -510,12 +611,12 @@ export default function DailyGoalAchievedModal({ isOpen, onClose, totalMinutes, 
       <ShareAchievementModal
         isOpen={showShareModal}
         onClose={() => {
-          setShowShareModal(false)
-          onClose()
+          setShowShareModal(false);
+          onClose();
         }}
         totalMinutes={safeMinutes}
         completionPercent={completionPercent}
       />
     </div>
-  )
+  );
 }

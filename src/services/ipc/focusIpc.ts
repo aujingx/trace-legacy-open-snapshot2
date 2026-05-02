@@ -51,7 +51,9 @@ export async function getFocusSessions(date: string): Promise<FocusSession[]> {
   if (!isDesktop()) {
     throw new Error('Not in desktop environment');
   }
-  const result = await invoke<BackendDbFocusSession[]>('get_focus_sessions_by_date', { date_prefix: date });
+  const result = await invoke<BackendDbFocusSession[]>('get_focus_sessions_by_date', {
+    date_prefix: date,
+  });
   return result.map(toFrontendFocusSession);
 }
 
@@ -119,7 +121,10 @@ export async function stopPomodoro(): Promise<void> {
 /**
  * Update an existing focus session
  */
-export async function updateFocusSession(id: string, updates: Partial<FocusSession>): Promise<void> {
+export async function updateFocusSession(
+  id: string,
+  updates: Partial<FocusSession>
+): Promise<void> {
   if (!isDesktop()) {
     throw new Error('Not in desktop environment');
   }

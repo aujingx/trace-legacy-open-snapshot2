@@ -30,9 +30,7 @@ export default function EmptyState({
       >
         {icon}
       </div>
-      <h3 className="text-lg font-semibold text-[var(--color-text-primary)] mb-1.5">
-        {title}
-      </h3>
+      <h3 className="text-lg font-semibold text-[var(--color-text-primary)] mb-1.5">{title}</h3>
       {description && (
         <p className="text-sm text-[var(--color-text-muted)] max-w-xs leading-relaxed mb-5">
           {description}

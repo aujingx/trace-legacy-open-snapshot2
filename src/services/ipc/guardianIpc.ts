@@ -70,9 +70,12 @@ function toBackendGuardianSettings(frontend: Partial<GuardianSettings>): Backend
     last_daily_review_date: frontend.lastDailyReviewDate || null,
     tomorrow_top_task_id: frontend.tomorrowTopTaskId || null,
     daily_review_time: frontend.dailyReviewTime || null,
-    enable_morning_ritual: frontend.enableMorningRitual === undefined ? null : frontend.enableMorningRitual ? 1 : 0,
-    enable_daily_review: frontend.enableDailyReview === undefined ? null : frontend.enableDailyReview ? 1 : 0,
-    enable_now_engine: frontend.enableNowEngine === undefined ? null : frontend.enableNowEngine ? 1 : 0,
+    enable_morning_ritual:
+      frontend.enableMorningRitual === undefined ? null : frontend.enableMorningRitual ? 1 : 0,
+    enable_daily_review:
+      frontend.enableDailyReview === undefined ? null : frontend.enableDailyReview ? 1 : 0,
+    enable_now_engine:
+      frontend.enableNowEngine === undefined ? null : frontend.enableNowEngine ? 1 : 0,
   };
 }
 
@@ -81,7 +84,7 @@ function toFrontendDailyReview(backend: BackendDailyReview): DailyReview {
   return {
     id: backend.id,
     date: backend.date,
-    mood: backend.mood as DailyReview['mood'] || null,
+    mood: (backend.mood as DailyReview['mood']) || null,
     winNote: backend.win_note || null,
     improveNote: backend.improve_note || null,
     focusMinutes: backend.focus_minutes || 0,
@@ -114,7 +117,9 @@ export async function updateGuardianSettings(settings: Partial<GuardianSettings>
 /**
  * Create or update a daily review
  */
-export async function saveDailyReview(review: Omit<DailyReview, 'id'> & { id?: string }): Promise<void> {
+export async function saveDailyReview(
+  review: Omit<DailyReview, 'id'> & { id?: string }
+): Promise<void> {
   if (!isDesktop()) {
     throw new Error('Not in desktop environment');
   }

@@ -1,30 +1,32 @@
-import { useState } from 'react'
-import { useAppStore } from '../store/useAppStore'
-import type { AppState } from '../store/useAppStore'
-import { colorThemeConfigs } from '../config/themes'
-import type { ColorTheme } from '../config/themes'
+import { useState } from 'react';
+import { useAppStore } from '../store/useAppStore';
+import type { AppState } from '../store/useAppStore';
+import { colorThemeConfigs } from '../config/themes';
+import type { ColorTheme } from '../config/themes';
 
-const THEME_KEYS = Object.keys(colorThemeConfigs) as ColorTheme[]
+const THEME_KEYS = Object.keys(colorThemeConfigs) as ColorTheme[];
 
 export default function ThemeSelector() {
-  const currentColorTheme = useAppStore((s: AppState) => s.colorTheme)
-  const setColorTheme = useAppStore((s: AppState) => s.setColorTheme)
-  const completeFirstLaunch = useAppStore((s: AppState) => s.completeFirstLaunch)
-  const [selected, setSelected] = useState<ColorTheme>(currentColorTheme)
+  const currentColorTheme = useAppStore((s: AppState) => s.colorTheme);
+  const setColorTheme = useAppStore((s: AppState) => s.setColorTheme);
+  const completeFirstLaunch = useAppStore((s: AppState) => s.completeFirstLaunch);
+  const [selected, setSelected] = useState<ColorTheme>(currentColorTheme);
 
   const handleSelect = (theme: ColorTheme) => {
-    setSelected(theme)
-    setColorTheme(theme)
-  }
+    setSelected(theme);
+    setColorTheme(theme);
+  };
 
   const handleConfirm = () => {
-    setColorTheme(selected)
-    completeFirstLaunch()
-  }
+    setColorTheme(selected);
+    completeFirstLaunch();
+  };
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center animate-fade-in"
-      style={{ background: 'rgba(44, 24, 16, 0.5)', backdropFilter: 'blur(12px)' }}>
+    <div
+      className="fixed inset-0 z-[200] flex items-center justify-center animate-fade-in"
+      style={{ background: 'rgba(44, 24, 16, 0.5)', backdropFilter: 'blur(12px)' }}
+    >
       <div
         className="relative w-full max-w-xl mx-4 overflow-hidden animate-scale-in"
         style={{
@@ -35,9 +37,12 @@ export default function ThemeSelector() {
         }}
       >
         {/* Decorative top gradient bar */}
-        <div className="h-1.5" style={{
-          background: `linear-gradient(90deg, ${THEME_KEYS.map(k => colorThemeConfigs[k].accent).join(', ')})`,
-        }} />
+        <div
+          className="h-1.5"
+          style={{
+            background: `linear-gradient(90deg, ${THEME_KEYS.map((k) => colorThemeConfigs[k].accent).join(', ')})`,
+          }}
+        />
 
         {/* Header */}
         <div className="px-8 pt-8 pb-2 text-center">
@@ -53,8 +58,8 @@ export default function ThemeSelector() {
         {/* Theme grid */}
         <div className="px-6 py-5 grid grid-cols-5 gap-3">
           {THEME_KEYS.map((key) => {
-            const config = colorThemeConfigs[key]
-            const isSel = selected === key
+            const config = colorThemeConfigs[key];
+            const isSel = selected === key;
 
             return (
               <button
@@ -79,7 +84,16 @@ export default function ThemeSelector() {
                   />
                   {isSel && (
                     <span className="absolute inset-0 flex items-center justify-center">
-                      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <svg
+                        width="20"
+                        height="20"
+                        viewBox="0 0 20 20"
+                        fill="none"
+                        stroke="white"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
                         <path d="M5 10l4 4 6-7" />
                       </svg>
                     </span>
@@ -87,12 +101,14 @@ export default function ThemeSelector() {
                 </div>
 
                 {/* Name */}
-                <span className="text-xs font-medium text-center leading-tight"
-                  style={{ color: isSel ? config.accent : 'var(--color-text-secondary)' }}>
+                <span
+                  className="text-xs font-medium text-center leading-tight"
+                  style={{ color: isSel ? config.accent : 'var(--color-text-secondary)' }}
+                >
                   {config.name}
                 </span>
               </button>
-            )
+            );
           })}
         </div>
 
@@ -112,5 +128,5 @@ export default function ThemeSelector() {
         </div>
       </div>
     </div>
-  )
+  );
 }

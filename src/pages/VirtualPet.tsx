@@ -1,9 +1,9 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
-import { useTranslation } from 'react-i18next'
-import { useAppStore } from '../store/useAppStore'
-import useTheme from '../hooks/useTheme'
-import { Button, Modal, Input, Progress } from '../components/ui'
-import PetShop from '../components/PetShop'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useAppStore } from '../store/useAppStore';
+import useTheme from '../hooks/useTheme';
+import { Button, Modal, Input, Progress } from '../components/ui';
+import PetShop from '../components/PetShop';
 
 // ─── Constants ───
 
@@ -16,10 +16,10 @@ const IDLE_MESSAGE_KEYS = [
   'pet.idle.6',
   'pet.idle.7',
   'pet.idle.8',
-]
+];
 
-const FEED_COST = 5
-const P = 4 // pixel size in px
+const FEED_COST = 5;
+const P = 4; // pixel size in px
 
 // ─── CSS Keyframes (injected once) ───
 
@@ -72,32 +72,32 @@ const KEYFRAME_CSS = `
   0%, 100% { opacity: 0; transform: scale(0); }
   50% { opacity: 1; transform: scale(1); }
 }
-`
+`;
 
 const injectKeyframes = (() => {
-  let injected = false
+  let injected = false;
   return () => {
-    if (injected) return
-    injected = true
-    const s = document.createElement('style')
-    s.textContent = KEYFRAME_CSS
-    document.head.appendChild(s)
-  }
-})()
+    if (injected) return;
+    injected = true;
+    const s = document.createElement('style');
+    s.textContent = KEYFRAME_CSS;
+    document.head.appendChild(s);
+  };
+})();
 
 // ─── Pixel Cat Sprite (box-shadow based) ───
 
 function buildPixelShadows(grid: string[][], palette: Record<string, string>, px: number): string {
-  const shadows: string[] = []
+  const shadows: string[] = [];
   for (let y = 0; y < grid.length; y++) {
     for (let x = 0; x < grid[y].length; x++) {
-      const c = grid[y][x]
+      const c = grid[y][x];
       if (c !== '.' && palette[c]) {
-        shadows.push(`${x * px}px ${y * px}px 0 0 ${palette[c]}`)
+        shadows.push(`${x * px}px ${y * px}px 0 0 ${palette[c]}`);
       }
     }
   }
-  return shadows.join(',')
+  return shadows.join(',');
 }
 
 const CAT_PALETTE: Record<string, string> = {
@@ -111,7 +111,7 @@ const CAT_PALETTE: Record<string, string> = {
   E: '#1a1a1a', // pupils
   N: '#ff8fa0', // nose
   M: '#d4956a', // mouth area
-}
+};
 
 // 16x16 cat pixel art grid
 const CAT_GRID = [
@@ -132,54 +132,58 @@ const CAT_GRID = [
   '....BOOOOOOOB.........',
   '....BBOOOOOOBB........',
   '...B..BBBBB..B........',
-].map(r => r.split(''))
+].map((r) => r.split(''));
 
-const CAT_SHADOW = buildPixelShadows(CAT_GRID, CAT_PALETTE, P)
+const CAT_SHADOW = buildPixelShadows(CAT_GRID, CAT_PALETTE, P);
 
 // sleeping cat (eyes closed)
 const CAT_SLEEP_GRID = CAT_GRID.map((row, y) => {
   if (y === 7 || y === 8) {
-    return row.map((c) => (c === 'E' || c === 'G') ? 'B' : c)
+    return row.map((c) => (c === 'E' || c === 'G' ? 'B' : c));
   }
-  return row
-})
-const CAT_SLEEP_SHADOW = buildPixelShadows(CAT_SLEEP_GRID, CAT_PALETTE, P)
+  return row;
+});
+const CAT_SLEEP_SHADOW = buildPixelShadows(CAT_SLEEP_GRID, CAT_PALETTE, P);
 
 // eating cat (open mouth)
 const CAT_EAT_GRID = CAT_GRID.map((row, y) => {
   if (y === 11) {
-    return row.map((c) => (c === 'M') ? 'B' : c)
+    return row.map((c) => (c === 'M' ? 'B' : c));
   }
-  return row
-})
-const CAT_EAT_SHADOW = buildPixelShadows(CAT_EAT_GRID, CAT_PALETTE, P)
+  return row;
+});
+const CAT_EAT_SHADOW = buildPixelShadows(CAT_EAT_GRID, CAT_PALETTE, P);
 
-type PetAnim = 'idle' | 'happy' | 'sad' | 'eating' | 'sleeping'
+type PetAnim = 'idle' | 'happy' | 'sad' | 'eating' | 'sleeping';
 
-function getAnimForState(hunger: number, mood: number, anim: PetAnim | null): { shadow: string; animation: string } {
-  const active = anim || 'idle'
+function getAnimForState(
+  hunger: number,
+  mood: number,
+  anim: PetAnim | null
+): { shadow: string; animation: string } {
+  const active = anim || 'idle';
   switch (active) {
     case 'happy':
-      return { shadow: CAT_SHADOW, animation: 'petHappy 0.6s ease-in-out infinite' }
+      return { shadow: CAT_SHADOW, animation: 'petHappy 0.6s ease-in-out infinite' };
     case 'sad':
-      return { shadow: CAT_SHADOW, animation: 'petSad 2s ease-in-out infinite' }
+      return { shadow: CAT_SHADOW, animation: 'petSad 2s ease-in-out infinite' };
     case 'eating':
-      return { shadow: CAT_EAT_SHADOW, animation: 'petEat 0.5s ease-in-out 3' }
+      return { shadow: CAT_EAT_SHADOW, animation: 'petEat 0.5s ease-in-out 3' };
     case 'sleeping':
-      return { shadow: CAT_SLEEP_SHADOW, animation: 'petSleep 3s ease-in-out infinite' }
+      return { shadow: CAT_SLEEP_SHADOW, animation: 'petSleep 3s ease-in-out infinite' };
     default:
-      if (hunger < 20) return { shadow: CAT_SHADOW, animation: 'petSad 2s ease-in-out infinite' }
-      if (mood < 20) return { shadow: CAT_SHADOW, animation: 'petSad 2s ease-in-out infinite' }
-      return { shadow: CAT_SHADOW, animation: 'petIdle 2.5s ease-in-out infinite' }
+      if (hunger < 20) return { shadow: CAT_SHADOW, animation: 'petSad 2s ease-in-out infinite' };
+      if (mood < 20) return { shadow: CAT_SHADOW, animation: 'petSad 2s ease-in-out infinite' };
+      return { shadow: CAT_SHADOW, animation: 'petIdle 2.5s ease-in-out infinite' };
   }
 }
 
 // ─── PixelCat Component ───
 
 function PixelCat({ hunger, mood, anim }: { hunger: number; mood: number; anim: PetAnim | null }) {
-  const { shadow, animation } = getAnimForState(hunger, mood, anim)
-  const gridW = 22
-  const gridH = 17
+  const { shadow, animation } = getAnimForState(hunger, mood, anim);
+  const gridW = 22;
+  const gridH = 17;
   return (
     <div className="relative" style={{ width: gridW * P + P, height: gridH * P + P }}>
       <div
@@ -249,7 +253,7 @@ function PixelCat({ hunger, mood, anim }: { hunger: number; mood: number; anim: 
         </>
       )}
     </div>
-  )
+  );
 }
 
 // ─── Speech Bubble ───
@@ -297,7 +301,7 @@ function SpeechBubble({ text, mini }: { text: string; mini?: boolean }) {
         }}
       />
     </div>
-  )
+  );
 }
 
 // ─── Stat Bar ───
@@ -310,14 +314,14 @@ function StatBar({
   color,
   bgTint,
 }: {
-  label: string
-  icon: string
-  value: number
-  max: number
-  color: string | ((v: number) => string)
-  bgTint: string
+  label: string;
+  icon: string;
+  value: number;
+  max: number;
+  color: string | ((v: number) => string);
+  bgTint: string;
 }) {
-  const resolvedColor = typeof color === 'function' ? color(value) : color
+  const resolvedColor = typeof color === 'function' ? color(value) : color;
   return (
     <div
       style={{
@@ -331,138 +335,152 @@ function StatBar({
           {icon} {label}
         </span>
         <span className="text-[var(--color-text-primary)] tabular-nums font-semibold">
-          <span className="metric-value" style={{ fontSize: '0.85rem' }}>{value}</span>
+          <span className="metric-value" style={{ fontSize: '0.85rem' }}>
+            {value}
+          </span>
           <span className="text-[var(--color-text-muted)]"> / {max}</span>
         </span>
       </div>
-      <Progress value={Math.min(100, (value / max) * 100)} color={resolvedColor} showLabel size="md" />
+      <Progress
+        value={Math.min(100, (value / max) * 100)}
+        color={resolvedColor}
+        showLabel
+        size="md"
+      />
     </div>
-  )
+  );
 }
 
 // ─── Hunger color helper ───
 function hungerColor(v: number): string {
-  if (v < 30) return '#ef4444'
-  if (v < 60) return '#f59e0b'
-  return '#22c55e'
+  if (v < 30) return '#ef4444';
+  if (v < 60) return '#f59e0b';
+  return '#22c55e';
 }
 
 // ─── Dialogue logic ───
 
-function getDialogue(hunger: number, mood: number, _name: string, anim: PetAnim | null, idleIdx: number, t: (key: string) => string): string {
-  if (anim === 'eating') return t('pet.dialogue.eating')
-  if (anim === 'happy') return t('pet.dialogue.happy')
-  if (hunger < 25) return t('pet.dialogue.hungry')
-  if (mood < 25) return t('pet.dialogue.tired')
-  if (anim === 'sleeping') return t('pet.dialogue.sleeping')
+function getDialogue(
+  hunger: number,
+  mood: number,
+  _name: string,
+  anim: PetAnim | null,
+  idleIdx: number,
+  t: (key: string) => string
+): string {
+  if (anim === 'eating') return t('pet.dialogue.eating');
+  if (anim === 'happy') return t('pet.dialogue.happy');
+  if (hunger < 25) return t('pet.dialogue.hungry');
+  if (mood < 25) return t('pet.dialogue.tired');
+  if (anim === 'sleeping') return t('pet.dialogue.sleeping');
   // idle rotation
-  const key = IDLE_MESSAGE_KEYS[idleIdx % IDLE_MESSAGE_KEYS.length]
-  return t(key)
+  const key = IDLE_MESSAGE_KEYS[idleIdx % IDLE_MESSAGE_KEYS.length];
+  return t(key);
 }
 
 // ─── Main Component ───
 
 export default function VirtualPet() {
-  const { t } = useTranslation()
-  const { isDark } = useTheme()
-  const pet = useAppStore((s) => s.pet)
-  const loadPet = useAppStore((s) => s.loadPet)
-  const feedPet = useAppStore((s) => s.feedPet)
-  const interactPet = useAppStore((s) => s.interactPet)
-  const renamePet = useAppStore((s) => s.renamePet)
+  const { t } = useTranslation();
+  const { isDark } = useTheme();
+  const pet = useAppStore((s) => s.pet);
+  const loadPet = useAppStore((s) => s.loadPet);
+  const feedPet = useAppStore((s) => s.feedPet);
+  const interactPet = useAppStore((s) => s.interactPet);
+  const renamePet = useAppStore((s) => s.renamePet);
 
-  const [anim, setAnim] = useState<PetAnim | null>(null)
-  const [idleIdx, setIdleIdx] = useState(0)
-  const [energy, setEnergy] = useState(80)
-  const [namingOpen, setNamingOpen] = useState(false)
-  const [renameOpen, setRenameOpen] = useState(false)
-  const [nameInput, setNameInput] = useState('')
-  const [firstVisitChecked, setFirstVisitChecked] = useState(false)
-  const [shopOpen, setShopOpen] = useState(false)
-  const animTimeout = useRef<ReturnType<typeof setTimeout>>()
+  const [anim, setAnim] = useState<PetAnim | null>(null);
+  const [idleIdx, setIdleIdx] = useState(0);
+  const [energy, setEnergy] = useState(80);
+  const [namingOpen, setNamingOpen] = useState(false);
+  const [renameOpen, setRenameOpen] = useState(false);
+  const [nameInput, setNameInput] = useState('');
+  const [firstVisitChecked, setFirstVisitChecked] = useState(false);
+  const [shopOpen, setShopOpen] = useState(false);
+  const animTimeout = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
-    loadPet()
-    injectKeyframes()
-  }, [loadPet])
+    loadPet();
+    injectKeyframes();
+  }, [loadPet]);
 
   // Check first visit (naming)
   useEffect(() => {
-    if (firstVisitChecked) return
-    const named = localStorage.getItem('trace-pet-named')
+    if (firstVisitChecked) return;
+    const named = localStorage.getItem('trace-pet-named');
     if (!named) {
-      setNamingOpen(true)
+      setNamingOpen(true);
     }
-    setFirstVisitChecked(true)
-  }, [firstVisitChecked])
+    setFirstVisitChecked(true);
+  }, [firstVisitChecked]);
 
   // Idle message rotation every 30s
   useEffect(() => {
     const iv = setInterval(() => {
-      setIdleIdx((i) => i + 1)
-    }, 30000)
-    return () => clearInterval(iv)
-  }, [])
+      setIdleIdx((i) => i + 1);
+    }, 30000);
+    return () => clearInterval(iv);
+  }, []);
 
   const playAnim = useCallback((a: PetAnim, duration: number) => {
-    if (animTimeout.current) clearTimeout(animTimeout.current)
-    setAnim(a)
-    animTimeout.current = setTimeout(() => setAnim(null), duration)
-  }, [])
+    if (animTimeout.current) clearTimeout(animTimeout.current);
+    setAnim(a);
+    animTimeout.current = setTimeout(() => setAnim(null), duration);
+  }, []);
 
   const handleFeed = useCallback(() => {
-    feedPet()
-    playAnim('eating', 1800)
-  }, [feedPet, playAnim])
+    feedPet();
+    playAnim('eating', 1800);
+  }, [feedPet, playAnim]);
 
   const handleInteract = useCallback(() => {
-    interactPet()
-    setEnergy((e) => Math.max(0, e - 8))
-    playAnim('happy', 2000)
-  }, [interactPet, playAnim])
+    interactPet();
+    setEnergy((e) => Math.max(0, e - 8));
+    playAnim('happy', 2000);
+  }, [interactPet, playAnim]);
 
   const handleTouch = useCallback(() => {
     // small mood boost via interact (store only has interactPet, we call it for small boost)
-    playAnim('happy', 1200)
-  }, [playAnim])
+    playAnim('happy', 1200);
+  }, [playAnim]);
 
   const handleNameSave = useCallback(() => {
-    const trimmed = nameInput.trim()
-    if (!trimmed) return
-    renamePet(trimmed)
-    localStorage.setItem('trace-pet-named', '1')
-    setNamingOpen(false)
-    setRenameOpen(false)
-  }, [nameInput, renamePet])
+    const trimmed = nameInput.trim();
+    if (!trimmed) return;
+    renamePet(trimmed);
+    localStorage.setItem('trace-pet-named', '1');
+    setNamingOpen(false);
+    setRenameOpen(false);
+  }, [nameInput, renamePet]);
 
   const handleOpenRename = useCallback(() => {
-    setNameInput(pet.name)
-    setRenameOpen(true)
-  }, [pet.name])
+    setNameInput(pet.name);
+    setRenameOpen(true);
+  }, [pet.name]);
 
-  const xpToNext = pet.level * 100
+  const xpToNext = pet.level * 100;
 
   const dialogue = useMemo(
     () => getDialogue(pet.hunger, pet.mood, pet.name, anim, idleIdx, t),
-    [pet.hunger, pet.mood, pet.name, anim, idleIdx, t],
-  )
+    [pet.hunger, pet.mood, pet.name, anim, idleIdx, t]
+  );
 
   // Welcome message on first render
-  const [welcomeShown, setWelcomeShown] = useState(false)
+  const [welcomeShown, setWelcomeShown] = useState(false);
   const displayText = useMemo(() => {
-    if (!welcomeShown) return t('pet.dialogue.welcome', { name: pet.name })
-    return dialogue
-  }, [welcomeShown, pet.name, dialogue, t])
+    if (!welcomeShown) return t('pet.dialogue.welcome', { name: pet.name });
+    return dialogue;
+  }, [welcomeShown, pet.name, dialogue, t]);
 
   useEffect(() => {
-    const t = setTimeout(() => setWelcomeShown(true), 5000)
-    return () => clearTimeout(t)
-  }, [])
+    const t = setTimeout(() => setWelcomeShown(true), 5000);
+    return () => clearTimeout(t);
+  }, []);
 
   const cardBg = isDark
     ? 'linear-gradient(145deg, var(--color-bg-surface-1) 0%, var(--color-bg-surface-2) 100%)'
-    : 'linear-gradient(145deg, #fffcf7 0%, var(--color-bg-surface-2) 100%)'
-  const cardBorder = '1px solid var(--color-border-subtle)'
+    : 'linear-gradient(145deg, #fffcf7 0%, var(--color-bg-surface-2) 100%)';
+  const cardBorder = '1px solid var(--color-border-subtle)';
 
   return (
     <div className="p-6 md:p-8 max-w-4xl mx-auto space-y-6">
@@ -471,9 +489,7 @@ export default function VirtualPet() {
         <h2 className="text-2xl font-bold text-[var(--color-text-primary)] mb-1">
           {t('pet.title')}
         </h2>
-        <p className="text-sm text-[var(--color-text-muted)]">
-          {t('pet.description')}
-        </p>
+        <p className="text-sm text-[var(--color-text-muted)]">{t('pet.description')}</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -679,14 +695,64 @@ export default function VirtualPet() {
             </h4>
             <div className="space-y-3 text-sm">
               {[
-                [t('pet.level'), <span className="metric-value" style={{ fontSize: '1.1rem' }}>{pet.level}</span>],
-                [t('pet.xp'), <span className="text-[var(--color-text-primary)] font-semibold tabular-nums">{pet.xp} {t('pet.xpUnit')}</span>],
-                [t('pet.coins'), <span className="font-semibold tabular-nums" style={{ background: 'var(--color-gold-gradient)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{pet.coins}</span>],
-                [t('pet.type'), <span className="text-[var(--color-text-primary)] font-medium">{pet.type === 'cat' ? '🐱 ' + t('pet.types.cat') : pet.type === 'bird' ? '🐦 ' + t('pet.types.bird') : pet.type === 'duck' ? '🐤 ' + t('pet.types.duck') : pet.type === 'rabbit' ? '🐰 ' + t('pet.types.rabbit') : pet.type === 'panda' ? '🐼 ' + t('pet.types.panda') : '🐱 ' + t('pet.types.cat')}</span>],
-                [t('pet.energy'), <span className="text-[var(--color-text-primary)] font-semibold tabular-nums">{energy}/100</span>],
+                [
+                  t('pet.level'),
+                  <span className="metric-value" style={{ fontSize: '1.1rem' }}>
+                    {pet.level}
+                  </span>,
+                ],
+                [
+                  t('pet.xp'),
+                  <span className="text-[var(--color-text-primary)] font-semibold tabular-nums">
+                    {pet.xp} {t('pet.xpUnit')}
+                  </span>,
+                ],
+                [
+                  t('pet.coins'),
+                  <span
+                    className="font-semibold tabular-nums"
+                    style={{
+                      background: 'var(--color-gold-gradient)',
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                    }}
+                  >
+                    {pet.coins}
+                  </span>,
+                ],
+                [
+                  t('pet.type'),
+                  <span className="text-[var(--color-text-primary)] font-medium">
+                    {pet.type === 'cat'
+                      ? '🐱 ' + t('pet.types.cat')
+                      : pet.type === 'bird'
+                        ? '🐦 ' + t('pet.types.bird')
+                        : pet.type === 'duck'
+                          ? '🐤 ' + t('pet.types.duck')
+                          : pet.type === 'rabbit'
+                            ? '🐰 ' + t('pet.types.rabbit')
+                            : pet.type === 'panda'
+                              ? '🐼 ' + t('pet.types.panda')
+                              : '🐱 ' + t('pet.types.cat')}
+                  </span>,
+                ],
+                [
+                  t('pet.energy'),
+                  <span className="text-[var(--color-text-primary)] font-semibold tabular-nums">
+                    {energy}/100
+                  </span>,
+                ],
               ].map(([lbl, val], i) => (
                 <div key={i}>
-                  {i > 0 && <div style={{ height: 1, background: 'var(--color-border-subtle)', marginBottom: 12 }} />}
+                  {i > 0 && (
+                    <div
+                      style={{
+                        height: 1,
+                        background: 'var(--color-border-subtle)',
+                        marginBottom: 12,
+                      }}
+                    />
+                  )}
                   <div className="flex justify-between items-center">
                     <span className="text-[var(--color-text-muted)]">{lbl}</span>
                     {val}
@@ -713,7 +779,11 @@ export default function VirtualPet() {
               {[
                 { icon: '📈', bg: 'var(--color-accent-soft)', text: t('pet.rules.rule1') },
                 { icon: '💰', bg: 'rgba(255,213,79,0.15)', text: t('pet.rules.rule2') },
-                { icon: '🍎', bg: 'var(--color-success-soft)', text: t('pet.rules.rule3', { cost: FEED_COST }) },
+                {
+                  icon: '🍎',
+                  bg: 'var(--color-success-soft)',
+                  text: t('pet.rules.rule3', { cost: FEED_COST }),
+                },
                 { icon: '🎾', bg: 'var(--color-info-soft)', text: t('pet.rules.rule4') },
                 { icon: '🤚', bg: 'rgba(236,72,153,0.08)', text: t('pet.rules.rule5') },
                 { icon: '⬆️', bg: 'var(--color-warning-soft)', text: t('pet.rules.rule6') },
@@ -744,8 +814,8 @@ export default function VirtualPet() {
       <Modal
         isOpen={namingOpen}
         onClose={() => {
-          localStorage.setItem('trace-pet-named', '1')
-          setNamingOpen(false)
+          localStorage.setItem('trace-pet-named', '1');
+          setNamingOpen(false);
         }}
         title={t('pet.namingTitle')}
         size="sm"
@@ -755,8 +825,8 @@ export default function VirtualPet() {
               variant="ghost"
               size="sm"
               onClick={() => {
-                localStorage.setItem('trace-pet-named', '1')
-                setNamingOpen(false)
+                localStorage.setItem('trace-pet-named', '1');
+                setNamingOpen(false);
               }}
             >
               {t('pet.useDefault')}
@@ -776,9 +846,7 @@ export default function VirtualPet() {
           <div style={{ margin: '0 auto 16px', display: 'flex', justifyContent: 'center' }}>
             <PixelCat hunger={80} mood={80} anim="happy" />
           </div>
-          <p className="text-sm text-[var(--color-text-muted)] mb-4">
-            {t('pet.namingDesc')}
-          </p>
+          <p className="text-sm text-[var(--color-text-muted)] mb-4">{t('pet.namingDesc')}</p>
           <Input
             label={t('pet.petNameLabel')}
             value={nameInput}
@@ -823,27 +891,28 @@ export default function VirtualPet() {
       {/* ═══ Pet Shop Modal ═══ */}
       <PetShop isOpen={shopOpen} onClose={() => setShopOpen(false)} />
     </div>
-  )
+  );
 }
 
 // ─── Mini Widget (for embedding in other pages) ───
 
 export function PetMiniWidget() {
-  const { t } = useTranslation()
-  const pet = useAppStore((s) => s.pet)
-  const loadPet = useAppStore((s) => s.loadPet)
+  const { t } = useTranslation();
+  const pet = useAppStore((s) => s.pet);
+  const loadPet = useAppStore((s) => s.loadPet);
 
   useEffect(() => {
-    loadPet()
-    injectKeyframes()
-  }, [loadPet])
+    loadPet();
+    injectKeyframes();
+  }, [loadPet]);
 
-  const idleKey = IDLE_MESSAGE_KEYS[Math.floor(Date.now() / 30000) % IDLE_MESSAGE_KEYS.length]
-  const msg = pet.hunger < 25
-    ? t('pet.dialogue.hungryMini')
-    : pet.mood < 25
-    ? t('pet.dialogue.unhappyMini')
-    : t(idleKey)
+  const idleKey = IDLE_MESSAGE_KEYS[Math.floor(Date.now() / 30000) % IDLE_MESSAGE_KEYS.length];
+  const msg =
+    pet.hunger < 25
+      ? t('pet.dialogue.hungryMini')
+      : pet.mood < 25
+        ? t('pet.dialogue.unhappyMini')
+        : t(idleKey);
 
   return (
     <div
@@ -869,5 +938,5 @@ export function PetMiniWidget() {
         {pet.name} Lv.{pet.level}
       </span>
     </div>
-  )
+  );
 }

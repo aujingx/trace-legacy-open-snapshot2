@@ -1,9 +1,9 @@
-import React, { useState, useMemo } from 'react'
-import { Sparkles, Play, RefreshCw, Clock, Plus, Zap, CalendarClock, Pause } from 'lucide-react'
-import { useAppStore } from '../store/useAppStore'
-import type { Task } from '../services/dataService'
-import { useFocusLogic } from './Focus/useFocusLogic'
-import LaunchBoostModal from './LaunchBoostModal'
+import React, { useState, useMemo } from 'react';
+import { Sparkles, Play, RefreshCw, Clock, Plus, Zap, CalendarClock, Pause } from 'lucide-react';
+import { useAppStore } from '../store/useAppStore';
+import type { Task } from '../services/dataService';
+import { useFocusLogic } from './Focus/useFocusLogic';
+import LaunchBoostModal from './LaunchBoostModal';
 
 const generateFirstStep = (taskName: string) => {
   const steps = [
@@ -11,36 +11,36 @@ const generateFirstStep = (taskName: string) => {
     `用 5 分钟规划一下这个任务的执行步骤`,
     `让我们拆解一下，从第一个子任务开始吧`,
     `清理桌面，现在只专注于这一件事`,
-  ]
-  return steps[Math.floor(Math.random() * steps.length)]
-}
+  ];
+  return steps[Math.floor(Math.random() * steps.length)];
+};
 
 const getMetaTags = (task: Task, actualMinutes: number) => {
-  const tags: { icon: React.ReactNode; label: string }[] = []
+  const tags: { icon: React.ReactNode; label: string }[] = [];
 
   // 先显示已投入时间
   if (actualMinutes > 0) {
-    const hours = Math.floor(actualMinutes / 60)
-    const mins = actualMinutes % 60
+    const hours = Math.floor(actualMinutes / 60);
+    const mins = actualMinutes % 60;
     tags.push({
       icon: <Clock size={12} />,
       label: hours > 0 ? `已投入 ${hours}h ${mins}m` : `已投入 ${mins}m`,
-    })
+    });
   }
 
   // 再显示预计时间
   if (task.estimatedMinutes) {
-    const hours = Math.floor(task.estimatedMinutes / 60)
-    const mins = task.estimatedMinutes % 60
-    const estLabel = hours > 0 ? `预计 ${hours}h ${mins}m` : `预计 ${mins}m`
+    const hours = Math.floor(task.estimatedMinutes / 60);
+    const mins = task.estimatedMinutes % 60;
+    const estLabel = hours > 0 ? `预计 ${hours}h ${mins}m` : `预计 ${mins}m`;
     // 如果已经有已投入时间，就把预计时间加到同一个标签里
     if (tags.length > 0 && actualMinutes > 0) {
-      tags[0].label += ` / ${estLabel}`
+      tags[0].label += ` / ${estLabel}`;
     } else {
       tags.push({
         icon: <Clock size={12} />,
         label: estLabel,
-      })
+      });
     }
   }
 
@@ -48,52 +48,52 @@ const getMetaTags = (task: Task, actualMinutes: number) => {
     tags.push({
       icon: <CalendarClock size={12} />,
       label: '即将到期',
-    })
+    });
   }
 
   if (task.priority && task.priority >= 4) {
     tags.push({
       icon: <Zap size={12} />,
       label: '高优先级',
-    })
+    });
   }
 
-  return tags
-}
+  return tags;
+};
 
 export default function NowEngineCard() {
-  const getRecommendedTasks = useAppStore((s) => s.getRecommendedTasks)
-  const activities = useAppStore((s) => s.activities)
-  const [launchBoostOpen, setLaunchBoostOpen] = useState(false)
-  const [currentTaskIndex, setCurrentTaskIndex] = useState(0)
+  const getRecommendedTasks = useAppStore((s) => s.getRecommendedTasks);
+  const activities = useAppStore((s) => s.activities);
+  const [launchBoostOpen, setLaunchBoostOpen] = useState(false);
+  const [currentTaskIndex, setCurrentTaskIndex] = useState(0);
 
   // 🎯 使用统一的 Focus Logic Hook
-  const { isWorking: isFocusing, currentFocusTask, startFocus, pauseFocus } = useFocusLogic()
+  const { isWorking: isFocusing, currentFocusTask, startFocus, pauseFocus } = useFocusLogic();
 
   // 计算每个任务的实际投入时间
   const taskActualTimeMap = useMemo(() => {
-    const map: Record<string, number> = {}
+    const map: Record<string, number> = {};
     activities.forEach((a: any) => {
       if (a.taskId) {
-        map[a.taskId] = (map[a.taskId] || 0) + (a.duration || 0)
+        map[a.taskId] = (map[a.taskId] || 0) + (a.duration || 0);
       }
-    })
-    return map
-  }, [activities])
+    });
+    return map;
+  }, [activities]);
 
-  const recommendedTasks = useMemo(() => getRecommendedTasks(5), [getRecommendedTasks])
-  const recommendedTask = recommendedTasks[currentTaskIndex] || null
+  const recommendedTasks = useMemo(() => getRecommendedTasks(5), [getRecommendedTasks]);
+  const recommendedTask = recommendedTasks[currentTaskIndex] || null;
 
   // 🎲 切换到下一个推荐任务
   const switchToNextTask = () => {
-    if (recommendedTasks.length <= 1) return
-    setCurrentTaskIndex((prev) => (prev + 1) % recommendedTasks.length)
-  }
+    if (recommendedTasks.length <= 1) return;
+    setCurrentTaskIndex((prev) => (prev + 1) % recommendedTasks.length);
+  };
 
   const handleStartFocus = (task: Task, durationMinutes: number) => {
-    startFocus(task.id, durationMinutes)
-    setLaunchBoostOpen(false)
-  }
+    startFocus(task.id, durationMinutes);
+    setLaunchBoostOpen(false);
+  };
 
   // 空状态 - 没有任务
   if (!recommendedTask && !currentFocusTask) {
@@ -117,10 +117,7 @@ export default function NowEngineCard() {
           >
             还没有任务
           </h3>
-          <p
-            className="text-sm mb-6"
-            style={{ color: 'var(--color-text-muted)' }}
-          >
+          <p className="text-sm mb-6" style={{ color: 'var(--color-text-muted)' }}>
             创建第一个任务，让 AI 帮你规划一天
           </p>
           <button
@@ -135,11 +132,13 @@ export default function NowEngineCard() {
           </button>
         </div>
       </div>
-    )
+    );
   }
 
-  const displayTask = currentFocusTask || recommendedTask
-  const metaTags = displayTask ? getMetaTags(displayTask, taskActualTimeMap[displayTask.id] || 0) : []
+  const displayTask = currentFocusTask || recommendedTask;
+  const metaTags = displayTask
+    ? getMetaTags(displayTask, taskActualTimeMap[displayTask.id] || 0)
+    : [];
 
   return (
     <>
@@ -154,20 +153,7 @@ export default function NowEngineCard() {
             : '4px 4px 0px var(--color-blue-shadow)',
         }}
       >
-        {/* NOW Label */}
-        <div className="mb-4">
-          <span
-            className="text-xs font-semibold tracking-wider uppercase"
-            style={{
-              fontFamily: 'JetBrains Mono, monospace',
-              color: isFocusing ? 'var(--color-green)' : 'var(--color-blue)',
-            }}
-          >
-            {isFocusing ? 'Focusing 🔥' : 'Now →'}
-          </span>
-        </div>
-
-        {/* Task Name - 🎯 显示当前专注任务或推荐任务 */}
+        {/* Task Name */}
         <h2
           className="text-xl font-bold mb-2.5"
           style={{
@@ -203,10 +189,7 @@ export default function NowEngineCard() {
               border: '1px solid var(--color-border-light)',
             }}
           >
-            <p
-              className="text-sm"
-              style={{ color: 'var(--color-text-secondary)' }}
-            >
+            <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
               💡 {generateFirstStep(displayTask.title)}
             </p>
           </div>
@@ -267,5 +250,5 @@ export default function NowEngineCard() {
         task={recommendedTask}
       />
     </>
-  )
+  );
 }

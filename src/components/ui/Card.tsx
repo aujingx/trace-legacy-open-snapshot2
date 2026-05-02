@@ -37,11 +37,13 @@ export default function Card({
       }
       data-card
       style={{
-        background: 'linear-gradient(180deg, var(--color-bg-surface-1) 0%, var(--color-bg-surface-2) 100%)',
+        background:
+          'linear-gradient(180deg, var(--color-bg-surface-1) 0%, var(--color-bg-surface-2) 100%)',
         border: '1px solid var(--color-border-subtle)',
         borderRadius: 'var(--radius-lg)',
         boxShadow: 'var(--shadow-card)',
-        transition: 'box-shadow 200ms cubic-bezier(0.4,0,0.2,1), transform 200ms cubic-bezier(0.4,0,0.2,1)',
+        transition:
+          'box-shadow 200ms cubic-bezier(0.4,0,0.2,1), transform 200ms cubic-bezier(0.4,0,0.2,1)',
         ...styleProp,
       }}
       className={[

@@ -1,12 +1,12 @@
-import { useState } from 'react'
-import { X, Clock, Zap, Rocket } from 'lucide-react'
-import type { Task } from '../services/dataService'
+import { useState } from 'react';
+import { X, Clock, Zap, Rocket } from 'lucide-react';
+import type { Task } from '../services/dataService';
 
 interface LaunchBoostModalProps {
-  isOpen: boolean
-  onClose: () => void
-  onStartFocus: (task: Task, durationMinutes: number) => void
-  task: Task | null
+  isOpen: boolean;
+  onClose: () => void;
+  onStartFocus: (task: Task, durationMinutes: number) => void;
+  task: Task | null;
 }
 
 export default function LaunchBoostModal({
@@ -15,15 +15,15 @@ export default function LaunchBoostModal({
   onStartFocus,
   task,
 }: LaunchBoostModalProps) {
-  const [customDuration, setCustomDuration] = useState(25)
-  const [selectedDuration, setSelectedDuration] = useState<number | null>(25)
+  const [customDuration, setCustomDuration] = useState(25);
+  const [selectedDuration, setSelectedDuration] = useState<number | null>(25);
 
-  if (!isOpen || !task) return null
+  if (!isOpen || !task) return null;
 
   const handleStart = (minutes: number) => {
-    onStartFocus(task, minutes)
-    onClose()
-  }
+    onStartFocus(task, minutes);
+    onClose();
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
@@ -65,7 +65,8 @@ export default function LaunchBoostModal({
         <div
           className="p-4 rounded-xl mb-6"
           style={{
-            background: 'linear-gradient(135deg, rgba(121, 190, 235, 0.1) 0%, rgba(212, 196, 251, 0.1) 100%)',
+            background:
+              'linear-gradient(135deg, rgba(121, 190, 235, 0.1) 0%, rgba(212, 196, 251, 0.1) 100%)',
             border: '1px solid var(--color-accent-soft)',
           }}
         >
@@ -92,7 +93,10 @@ export default function LaunchBoostModal({
 
         {/* Duration Selector */}
         <div className="mb-6">
-          <p className="text-sm font-semibold mb-3" style={{ color: 'var(--color-text-secondary)' }}>
+          <p
+            className="text-sm font-semibold mb-3"
+            style={{ color: 'var(--color-text-secondary)' }}
+          >
             选择专注时长
           </p>
           <div className="grid grid-cols-3 gap-3">
@@ -100,12 +104,13 @@ export default function LaunchBoostModal({
               <button
                 key={mins}
                 onClick={() => {
-                  setSelectedDuration(mins)
-                  handleStart(mins)
+                  setSelectedDuration(mins);
+                  handleStart(mins);
                 }}
                 className="p-4 rounded-xl transition-all hover:scale-[1.02] hover:shadow-md"
                 style={{
-                  background: selectedDuration === mins ? 'var(--color-accent)' : 'var(--color-bg-surface-2)',
+                  background:
+                    selectedDuration === mins ? 'var(--color-accent)' : 'var(--color-bg-surface-2)',
                   border: `2px solid ${selectedDuration === mins ? 'var(--color-accent)' : 'var(--color-border-subtle)'}`,
                   color: selectedDuration === mins ? 'white' : 'var(--color-text-primary)',
                 }}
@@ -123,7 +128,9 @@ export default function LaunchBoostModal({
           <input
             type="number"
             value={customDuration}
-            onChange={(e) => setCustomDuration(Math.max(5, Math.min(180, parseInt(e.target.value) || 5)))}
+            onChange={(e) =>
+              setCustomDuration(Math.max(5, Math.min(180, parseInt(e.target.value) || 5)))
+            }
             className="flex-1 px-4 py-3 rounded-xl text-center text-lg font-bold"
             style={{
               background: 'var(--color-bg-surface-2)',
@@ -159,5 +166,5 @@ export default function LaunchBoostModal({
         </button>
       </div>
     </div>
-  )
+  );
 }

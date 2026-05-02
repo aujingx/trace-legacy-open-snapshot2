@@ -1,15 +1,15 @@
-import React from 'react'
+import React from 'react';
 
 // ─── Skeleton ───────────────────────────────────────────────
 // Reusable skeleton loading component using CSS variable theming.
 // Uses the `skeleton-loading` CSS class already defined in index.css.
 
 interface SkeletonProps {
-  width?: string | number
-  height?: string | number
-  rounded?: 'sm' | 'md' | 'lg' | 'full' | string
-  className?: string
-  style?: React.CSSProperties
+  width?: string | number;
+  height?: string | number;
+  rounded?: 'sm' | 'md' | 'lg' | 'full' | string;
+  className?: string;
+  style?: React.CSSProperties;
 }
 
 const radiusMap: Record<string, string> = {
@@ -17,7 +17,7 @@ const radiusMap: Record<string, string> = {
   md: 'var(--radius-md)',
   lg: 'var(--radius-lg)',
   full: 'var(--radius-full)',
-}
+};
 
 export function Skeleton({
   width,
@@ -26,7 +26,7 @@ export function Skeleton({
   className = '',
   style,
 }: SkeletonProps) {
-  const borderRadius = radiusMap[rounded] ?? rounded
+  const borderRadius = radiusMap[rounded] ?? rounded;
   return (
     <div
       className={`skeleton-loading ${className}`}
@@ -37,23 +37,20 @@ export function Skeleton({
         ...style,
       }}
     />
-  )
+  );
 }
 
 // ─── SkeletonCard ───────────────────────────────────────────
 // Pre-made skeleton that mimics a typical card layout.
 
 interface SkeletonCardProps {
-  className?: string
-  lines?: number
+  className?: string;
+  lines?: number;
 }
 
 export function SkeletonCard({ className = '', lines = 3 }: SkeletonCardProps) {
   return (
-    <div
-      className={`trace-card p-5 space-y-4 ${className}`}
-      style={{ animation: 'none' }}
-    >
+    <div className={`trace-card p-5 space-y-4 ${className}`} style={{ animation: 'none' }}>
       {/* Title bar */}
       <Skeleton width="45%" height="1.25rem" rounded="md" />
       {/* Metric / hero number */}
@@ -70,15 +67,15 @@ export function SkeletonCard({ className = '', lines = 3 }: SkeletonCardProps) {
         ))}
       </div>
     </div>
-  )
+  );
 }
 
 // ─── SkeletonList ───────────────────────────────────────────
 // Pre-made skeleton that mimics a list of items.
 
 interface SkeletonListProps {
-  className?: string
-  rows?: number
+  className?: string;
+  rows?: number;
 }
 
 export function SkeletonList({ className = '', rows = 5 }: SkeletonListProps) {
@@ -90,17 +87,13 @@ export function SkeletonList({ className = '', rows = 5 }: SkeletonListProps) {
           <Skeleton width="2rem" height="2rem" rounded="full" />
           {/* Text lines */}
           <div className="flex-1 space-y-1.5">
-            <Skeleton
-              width={`${65 + ((i * 17) % 30)}%`}
-              height="0.75rem"
-              rounded="full"
-            />
+            <Skeleton width={`${65 + ((i * 17) % 30)}%`} height="0.75rem" rounded="full" />
             <Skeleton width="40%" height="0.6rem" rounded="full" />
           </div>
         </div>
       ))}
     </div>
-  )
+  );
 }
 
-export default Skeleton
+export default Skeleton;

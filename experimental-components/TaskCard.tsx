@@ -35,7 +35,7 @@ export default function TaskCard({ task, onClick, onStartTimer }: TaskCardProps)
       {/* 主内容 */}
       <div className="flex-1 min-w-0">
         <p
-          className="text-sm font-medium truncate"
+          className="text-sm font-medium"
           style={{
             color: 'var(--color-text-primary)',
             textDecoration: isCompleted ? 'line-through' : 'none'

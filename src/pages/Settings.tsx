@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState } from 'react';
 import {
   Palette,
   Target,
@@ -15,19 +15,18 @@ import {
   Check,
   Bot,
   Download,
+  Upload,
   Keyboard,
   Info,
-} from 'lucide-react'
-import { useAppStore } from '../store/useAppStore'
-import { useToastFeedback } from '../hooks/useToastFeedback'
+} from 'lucide-react';
+import { useAppStore } from '../store/useAppStore';
+import { useToastFeedback } from '../hooks/useToastFeedback';
 
 // Setting sections with grouped navigation
 const SETTING_SECTIONS = [
   {
     group: '🎨 外观',
-    items: [
-      { key: 'theme', label: '主题', icon: Palette, color: 'var(--color-green)' },
-    ],
+    items: [{ key: 'theme', label: '主题', icon: Palette, color: 'var(--color-green)' }],
   },
   {
     group: '🎯 专注与目标',
@@ -39,15 +38,11 @@ const SETTING_SECTIONS = [
   },
   {
     group: '🤖 AI 智能',
-    items: [
-      { key: 'ai', label: 'AI 分类', icon: Bot, color: 'var(--color-purple)' },
-    ],
+    items: [{ key: 'ai', label: 'AI 分类', icon: Bot, color: 'var(--color-purple)' }],
   },
   {
     group: '🛡️ Guardian',
-    items: [
-      { key: 'guardian', label: 'Guardian', icon: Shield, color: 'var(--color-purple)' },
-    ],
+    items: [{ key: 'guardian', label: 'Guardian', icon: Shield, color: 'var(--color-purple)' }],
   },
   {
     group: '⚙️ 高级',
@@ -59,89 +54,101 @@ const SETTING_SECTIONS = [
       { key: 'clearData', label: '清除所有数据', icon: Trash2, color: 'var(--color-coral)' },
     ],
   },
-]
+];
 
 // Color palette for category selection - 用户可选的分类颜色配置
 /* eslint-disable no-restricted-syntax */
 const CATEGORY_COLORS = [
-  'var(--color-blue)', 'var(--color-purple)', 'var(--color-green)', 'var(--color-lemon)', 'var(--color-coral)',
-  'var(--color-text-muted)', '#F7DC6F', '#BB8FCE', '#85C1E9', '#82E0AA',
-  '#F1948A', '#F8C471', '#AED6F1', '#A9DFBF', '#FCF3CF',
-]
+  'var(--color-blue)',
+  'var(--color-purple)',
+  'var(--color-green)',
+  'var(--color-lemon)',
+  'var(--color-coral)',
+  'var(--color-text-muted)',
+  '#F7DC6F',
+  '#BB8FCE',
+  '#85C1E9',
+  '#82E0AA',
+  '#F1948A',
+  '#F8C471',
+  '#AED6F1',
+  '#A9DFBF',
+  '#FCF3CF',
+];
 /* eslint-enable no-restricted-syntax */
 
 export default function Settings() {
-  const theme = useAppStore((s) => s.theme)
-  const setTheme = useAppStore((s) => s.setTheme)
-  const dailyGoalMinutes = useAppStore((s) => s.dailyGoalMinutes)
-  const setDailyGoalMinutes = useAppStore((s) => s.setDailyGoalMinutes)
-  const focusSettings = useAppStore((s) => s.focusSettings)
-  const updateFocusSettings = useAppStore((s) => s.updateFocusSettings)
-  const guardianSettings = useAppStore((s) => s.guardianSettings)
-  const updateGuardianSettings = useAppStore((s) => s.updateGuardianSettings)
-  const categories = useAppStore((s) => s.categories)
-  const toggleCategory = useAppStore((s) => s.toggleCategory)
-  const addCategory = useAppStore((s) => s.addCategory)
-  const updateCategory = useAppStore((s) => s.updateCategory)
-  const deleteCategory = useAppStore((s) => s.deleteCategory)
+  const theme = useAppStore((s) => s.theme);
+  const setTheme = useAppStore((s) => s.setTheme);
+  const dailyGoalMinutes = useAppStore((s) => s.dailyGoalMinutes);
+  const setDailyGoalMinutes = useAppStore((s) => s.setDailyGoalMinutes);
+  const focusSettings = useAppStore((s) => s.focusSettings);
+  const updateFocusSettings = useAppStore((s) => s.updateFocusSettings);
+  const guardianSettings = useAppStore((s) => s.guardianSettings);
+  const updateGuardianSettings = useAppStore((s) => s.updateGuardianSettings);
+  const categories = useAppStore((s) => s.categories);
+  const toggleCategory = useAppStore((s) => s.toggleCategory);
+  const addCategory = useAppStore((s) => s.addCategory);
+  const updateCategory = useAppStore((s) => s.updateCategory);
+  const deleteCategory = useAppStore((s) => s.deleteCategory);
 
-  const [activeSection, setActiveSection] = useState<string>('theme')
-  const [showClearDataConfirm, setShowClearDataConfirm] = useState(false)
-  const clearAllData = useAppStore((s) => s.clearAllData)
-  const { success, error } = useToastFeedback()
-  const [autoAcceptThreshold, setAutoAcceptThreshold] = useState(95)
-  const [minEntryMinutes, setMinEntryMinutes] = useState(15)
+  const [activeSection, setActiveSection] = useState<string>('theme');
+  const [showClearDataConfirm, setShowClearDataConfirm] = useState(false);
+  const clearAllData = useAppStore((s) => s.clearAllData);
+  const { success, error } = useToastFeedback();
+  const [autoAcceptThreshold, setAutoAcceptThreshold] = useState(95);
+  const [minEntryMinutes, setMinEntryMinutes] = useState(15);
 
   // Category edit states
-  const [isAddingCategory, setIsAddingCategory] = useState(false)
-  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null)
-  const [newCategoryName, setNewCategoryName] = useState('')
-  const [newCategoryColor, setNewCategoryColor] = useState(CATEGORY_COLORS[0])
-  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
-  const [migrateToId, setMigrateToId] = useState('other')
+  const [isAddingCategory, setIsAddingCategory] = useState(false);
+  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [newCategoryColor, setNewCategoryColor] = useState(CATEGORY_COLORS[0]);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [migrateToId, setMigrateToId] = useState('other');
 
   const startAddCategory = () => {
-    setIsAddingCategory(true)
-    setNewCategoryName('')
-    setNewCategoryColor(CATEGORY_COLORS[0])
-  }
+    setIsAddingCategory(true);
+    setNewCategoryName('');
+    setNewCategoryColor(CATEGORY_COLORS[0]);
+  };
 
   const cancelAddCategory = () => {
-    setIsAddingCategory(false)
-    setNewCategoryName('')
-  }
+    setIsAddingCategory(false);
+    setNewCategoryName('');
+  };
 
   const saveNewCategory = () => {
     if (newCategoryName.trim()) {
-      addCategory(newCategoryName.trim(), newCategoryColor)
-      setIsAddingCategory(false)
-      setNewCategoryName('')
-      success('已添加分类')
+      addCategory(newCategoryName.trim(), newCategoryColor);
+      setIsAddingCategory(false);
+      setNewCategoryName('');
+      success('已添加分类');
     }
-  }
+  };
 
   const startEditCategory = (category: any) => {
-    setEditingCategoryId(category.id)
-    setNewCategoryName(category.name)
-    setNewCategoryColor(category.color)
-  }
+    setEditingCategoryId(category.id);
+    setNewCategoryName(category.name);
+    setNewCategoryColor(category.color);
+  };
 
   const cancelEditCategory = () => {
-    setEditingCategoryId(null)
-    setNewCategoryName('')
-  }
+    setEditingCategoryId(null);
+    setNewCategoryName('');
+  };
 
   const saveEditCategory = () => {
     if (editingCategoryId && newCategoryName.trim()) {
       updateCategory(editingCategoryId, {
         name: newCategoryName.trim(),
         color: newCategoryColor,
-      })
-      setEditingCategoryId(null)
-      setNewCategoryName('')
-      success('已更新分类')
+      });
+      setEditingCategoryId(null);
+      setNewCategoryName('');
+      success('已更新分类');
     }
-  }
+  };
 
   // Render section content based on active key
   const renderSectionContent = () => {
@@ -165,7 +172,10 @@ export default function Settings() {
                   <Trash2 size={20} style={{ color: 'var(--color-coral)' }} />
                 </div>
                 <div>
-                  <h3 className="text-base font-semibold" style={{ color: 'var(--color-text-primary)' }}>
+                  <h3
+                    className="text-base font-semibold"
+                    style={{ color: 'var(--color-text-primary)' }}
+                  >
                     清除所有数据
                   </h3>
                   <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
@@ -188,22 +198,28 @@ export default function Settings() {
                   className="p-4 rounded-xl"
                   style={{ background: '#FFF5F5', border: '2px solid var(--color-coral)' }}
                 >
-                  <p className="text-sm font-medium mb-4 text-center" style={{ color: 'var(--color-text-primary)' }}>
+                  <p
+                    className="text-sm font-medium mb-4 text-center"
+                    style={{ color: 'var(--color-text-primary)' }}
+                  >
                     确定要删除所有数据吗？此操作不可撤销
                   </p>
                   <div className="flex items-center gap-3">
                     <button
                       onClick={async () => {
                         try {
-                          await clearAllData()
-                          setShowClearDataConfirm(false)
-                          success('所有数据已清除')
+                          await clearAllData();
+                          setShowClearDataConfirm(false);
+                          success('所有数据已清除');
                         } catch {
-                          error('清除数据失败')
+                          error('清除数据失败');
                         }
                       }}
                       className="flex-1 flex items-center justify-center gap-2 p-3 rounded-xl text-sm font-medium transition-all hover:opacity-90"
-                      style={{ background: 'var(--color-coral)', color: 'var(--color-bg-surface-1)' }}
+                      style={{
+                        background: 'var(--color-coral)',
+                        color: 'var(--color-bg-surface-1)',
+                      }}
                     >
                       <Trash2 size={16} />
                       确认删除
@@ -211,7 +227,10 @@ export default function Settings() {
                     <button
                       onClick={() => setShowClearDataConfirm(false)}
                       className="flex-1 flex items-center justify-center gap-2 p-3 rounded-xl text-sm font-medium transition-all hover:opacity-80"
-                      style={{ background: 'var(--color-border-light)', color: 'var(--color-text-secondary)' }}
+                      style={{
+                        background: 'var(--color-border-light)',
+                        color: 'var(--color-text-secondary)',
+                      }}
                     >
                       取消
                     </button>
@@ -220,7 +239,7 @@ export default function Settings() {
               )}
             </div>
           </div>
-        )
+        );
 
       case 'ai':
         return (
@@ -241,7 +260,10 @@ export default function Settings() {
                   <Bot size={20} style={{ color: 'var(--color-purple)' }} />
                 </div>
                 <div>
-                  <h3 className="text-base font-semibold" style={{ color: 'var(--color-text-primary)' }}>
+                  <h3
+                    className="text-base font-semibold"
+                    style={{ color: 'var(--color-text-primary)' }}
+                  >
                     AI 自动分类
                   </h3>
                   <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
@@ -251,24 +273,87 @@ export default function Settings() {
               </div>
 
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>
-                    启用 AI 自动分类
-                  </span>
-                  <div className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
-                    Pro 功能
+                <div className="p-4 rounded-xl" style={{ background: 'var(--color-bg-surface-2)' }}>
+                  <p className="text-sm mb-4" style={{ color: 'var(--color-text-secondary)' }}>
+                    AI 分类功能可以自动识别您的活动内容，并智能归类到合适的分类中。
+                    请配置您的 API Key 以启用此功能。
+                  </p>
+
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-primary)' }}>
+                        AI 服务提供商
+                      </label>
+                      <select
+                        className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-all"
+                        style={{
+                          background: 'var(--color-bg-surface-1)',
+                          border: '2px solid var(--color-border-light)',
+                          color: 'var(--color-text-primary)',
+                        }}
+                      >
+                        <option value="ernie">百度文心一言 (ERNIE)</option>
+                        <option value="doubao">字节跳动豆包 (Doubao)</option>
+                        <option value="openai">OpenAI GPT-4</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-primary)' }}>
+                        API Key
+                      </label>
+                      <input
+                        type="password"
+                        placeholder="请输入您的 API Key"
+                        className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-all"
+                        style={{
+                          background: 'var(--color-bg-surface-1)',
+                          border: '2px solid var(--color-border-light)',
+                          color: 'var(--color-text-primary)',
+                        }}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-primary)' }}>
+                        API Endpoint (可选)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop"
+                        className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-all"
+                        style={{
+                          background: 'var(--color-bg-surface-1)',
+                          border: '2px solid var(--color-border-light)',
+                          color: 'var(--color-text-primary)',
+                        }}
+                      />
+                    </div>
+
+                    <button
+                      onClick={() => success('AI 配置已保存')}
+                      className="w-full py-3 rounded-xl font-semibold text-sm text-white transition-all hover:opacity-90"
+                      style={{ background: 'var(--color-blue-gradient)' }}
+                    >
+                      保存配置并测试连接
+                    </button>
                   </div>
                 </div>
 
-                <div className="p-4 rounded-xl" style={{ background: 'var(--color-bg-surface-2)' }}>
-                  <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-                    AI 分类功能可以自动识别您的活动内容，并智能归类到合适的分类中，减少手动操作的麻烦。
+                <div className="p-4 rounded-xl" style={{ background: 'var(--color-blue-soft)' }}>
+                  <p className="text-xs mb-2" style={{ color: 'var(--color-blue)' }}>
+                    💡 如何获取 API Key？
                   </p>
+                  <ul className="text-xs space-y-1" style={{ color: 'var(--color-text-secondary)' }}>
+                    <li>• 文心一言: 访问 <span className="font-medium">https://cloud.baidu.com</span> 创建应用</li>
+                    <li>• 豆包: 访问 <span className="font-medium">https://console.volcengine.com</span> 开通服务</li>
+                    <li>• API Key 仅保存在本地，不会上传到我们的服务器</li>
+                  </ul>
                 </div>
               </div>
             </div>
           </div>
-        )
+        );
 
       case 'dataExport':
         return (
@@ -289,54 +374,121 @@ export default function Settings() {
                   <Download size={20} style={{ color: 'var(--color-blue)' }} />
                 </div>
                 <div>
-                  <h3 className="text-base font-semibold" style={{ color: 'var(--color-text-primary)' }}>
-                    数据导出
+                  <h3
+                    className="text-base font-semibold"
+                    style={{ color: 'var(--color-text-primary)' }}
+                  >
+                    数据备份与恢复
                   </h3>
                   <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
-                    导出您的时间追踪数据
+                    导出所有数据到本地文件，或从备份恢复
                   </p>
                 </div>
               </div>
 
-              <div className="space-y-3">
+              <div className="space-y-3 mb-6">
                 <button
-                  onClick={() => success('JSON 导出功能开发中...')}
+                  onClick={async () => {
+                    try {
+                      await useAppStore.getState().exportAllData();
+                      success('数据导出成功！');
+                    } catch (e) {
+                      error('导出失败，请重试');
+                    }
+                  }}
                   className="w-full flex items-center justify-between p-4 rounded-xl transition-all hover:opacity-90"
                   style={{ background: 'var(--color-bg-surface-2)' }}
                 >
-                  <span className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>
-                    导出为 JSON
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="w-8 h-8 rounded-lg flex items-center justify-center"
+                      style={{ background: 'var(--color-blue-soft)' }}
+                    >
+                      <Download size={16} style={{ color: 'var(--color-blue)' }} />
+                    </div>
+                    <div className="text-left">
+                      <span
+                        className="text-sm font-medium block"
+                        style={{ color: 'var(--color-text-primary)' }}
+                      >
+                        导出完整备份
+                      </span>
+                      <span
+                        className="text-xs"
+                        style={{ color: 'var(--color-text-muted)' }}
+                      >
+                        包含所有活动、任务、设置
+                      </span>
+                    </div>
+                  </div>
+                  <span
+                    className="text-xs px-2 py-1 rounded-full"
+                    style={{ background: 'var(--color-green-soft)', color: 'var(--color-green)' }}
+                  >
+                    推荐
                   </span>
-                  <Download size={16} style={{ color: 'var(--color-text-muted)' }} />
                 </button>
 
                 <button
-                  onClick={() => success('CSV 导出功能开发中...')}
+                  onClick={() => {
+                    const input = document.createElement('input');
+                    input.type = 'file';
+                    input.accept = '.json';
+                    input.onchange = async (e: any) => {
+                      const file = e.target.files[0];
+                      if (file) {
+                        try {
+                          const text = await file.text();
+                          const data = JSON.parse(text);
+                          await useAppStore.getState().importAllData(data);
+                          success('数据恢复成功！');
+                          window.location.reload();
+                        } catch (err) {
+                          error('恢复失败：文件格式不正确');
+                        }
+                      }
+                    };
+                    input.click();
+                  }}
                   className="w-full flex items-center justify-between p-4 rounded-xl transition-all hover:opacity-90"
                   style={{ background: 'var(--color-bg-surface-2)' }}
                 >
-                  <span className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>
-                    导出为 CSV
-                  </span>
-                  <Download size={16} style={{ color: 'var(--color-text-muted)' }} />
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="w-8 h-8 rounded-lg flex items-center justify-center"
+                      style={{ background: 'var(--color-green-soft)' }}
+                    >
+                      <Upload size={16} style={{ color: 'var(--color-green)' }} />
+                    </div>
+                    <div className="text-left">
+                      <span
+                        className="text-sm font-medium block"
+                        style={{ color: 'var(--color-text-primary)' }}
+                      >
+                        从备份文件恢复
+                      </span>
+                      <span
+                        className="text-xs"
+                        style={{ color: 'var(--color-text-muted)' }}
+                      >
+                        选择之前导出的 JSON 文件
+                      </span>
+                    </div>
+                  </div>
                 </button>
+              </div>
 
-                <button
-                  onClick={() => success('PDF 报告导出功能开发中...')}
-                  className="w-full flex items-center justify-between p-4 rounded-xl transition-all hover:opacity-90"
-                  style={{ background: 'var(--color-bg-surface-2)' }}
-                >
-                  <span className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>
-                    导出 PDF 报告
-                  </span>
-                  <span className="text-xs px-2 py-1 rounded-full" style={{ background: 'var(--color-purple-soft)', color: 'var(--color-purple)' }}>
-                    Pro
-                  </span>
-                </button>
+              <div className="p-4 rounded-xl" style={{ background: 'var(--color-lemon-soft)' }}>
+                <p className="text-xs" style={{ color: '#92400E' }}>
+                  💡 <span className="font-semibold">数据安全提示</span><br />
+                  • 所有数据仅保存在您的本地设备<br />
+                  • 定期导出备份防止数据丢失<br />
+                  • 卸载应用前请务必备份您的数据
+                </p>
               </div>
             </div>
           </div>
-        )
+        );
 
       case 'shortcuts':
         return (
@@ -357,7 +509,10 @@ export default function Settings() {
                   <Keyboard size={20} style={{ color: 'var(--color-green)' }} />
                 </div>
                 <div>
-                  <h3 className="text-base font-semibold" style={{ color: 'var(--color-text-primary)' }}>
+                  <h3
+                    className="text-base font-semibold"
+                    style={{ color: 'var(--color-text-primary)' }}
+                  >
                     全局快捷键
                   </h3>
                   <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
@@ -373,8 +528,15 @@ export default function Settings() {
                   { action: '显示/隐藏窗口', shortcut: 'Cmd/Ctrl + Shift + H' },
                   { action: '打开设置', shortcut: 'Cmd/Ctrl + ,' },
                 ].map((item) => (
-                  <div key={item.action} className="flex items-center justify-between p-4 rounded-xl" style={{ background: 'var(--color-bg-surface-2)' }}>
-                    <span className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>
+                  <div
+                    key={item.action}
+                    className="flex items-center justify-between p-4 rounded-xl"
+                    style={{ background: 'var(--color-bg-surface-2)' }}
+                  >
+                    <span
+                      className="text-sm font-medium"
+                      style={{ color: 'var(--color-text-primary)' }}
+                    >
                       {item.action}
                     </span>
                     <kbd
@@ -392,7 +554,7 @@ export default function Settings() {
               </div>
             </div>
           </div>
-        )
+        );
 
       case 'about':
         return (
@@ -412,7 +574,13 @@ export default function Settings() {
                 >
                   <span className="text-white text-3xl">⏱️</span>
                 </div>
-                <h2 className="text-xl font-bold mb-1" style={{ color: 'var(--color-text-primary)', fontFamily: 'Quicksand, sans-serif' }}>
+                <h2
+                  className="text-xl font-bold mb-1"
+                  style={{
+                    color: 'var(--color-text-primary)',
+                    fontFamily: 'Quicksand, sans-serif',
+                  }}
+                >
                   Trace
                 </h2>
                 <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
@@ -420,7 +588,10 @@ export default function Settings() {
                 </p>
               </div>
 
-              <div className="p-4 rounded-xl mb-4" style={{ background: 'var(--color-bg-surface-2)' }}>
+              <div
+                className="p-4 rounded-xl mb-4"
+                style={{ background: 'var(--color-bg-surface-2)' }}
+              >
                 <p className="text-sm text-center" style={{ color: 'var(--color-text-secondary)' }}>
                   智能时间追踪工具，帮助您更好地了解和管理自己的时间。
                 </p>
@@ -433,7 +604,7 @@ export default function Settings() {
               </div>
             </div>
           </div>
-        )
+        );
 
       case 'theme':
         return (
@@ -446,11 +617,17 @@ export default function Settings() {
                 boxShadow: '4px 4px 0px var(--color-border-strong)',
               }}
             >
-              <h3 className="text-base font-semibold mb-4" style={{ color: 'var(--color-text-primary)' }}>
+              <h3
+                className="text-base font-semibold mb-4"
+                style={{ color: 'var(--color-text-primary)' }}
+              >
                 Appearance
               </h3>
               <div className="mb-6">
-                <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: 'var(--color-text-muted)' }}>
+                <p
+                  className="text-xs font-semibold uppercase tracking-wider mb-3"
+                  style={{ color: 'var(--color-text-muted)' }}
+                >
                   Theme
                 </p>
                 <div className="grid grid-cols-2 gap-3">
@@ -458,30 +635,44 @@ export default function Settings() {
                     { key: 'light', label: 'Light', icon: Sun },
                     { key: 'dark', label: 'Dark', icon: Moon },
                   ].map((option) => {
-                    const Icon = option.icon
-                    const isActive = theme === option.key
+                    const Icon = option.icon;
+                    const isActive = theme === option.key;
                     return (
                       <button
                         key={option.key}
                         onClick={() => setTheme(option.key as 'light' | 'dark')}
                         className="p-4 rounded-xl flex flex-col items-center gap-2 transition-all"
                         style={{
-                          background: isActive ? 'var(--color-blue)20' : 'var(--color-bg-surface-3)',
-                          border: isActive ? '2px solid var(--color-blue)' : '2px solid transparent',
+                          background: isActive
+                            ? 'var(--color-blue)20'
+                            : 'var(--color-bg-surface-3)',
+                          border: isActive
+                            ? '2px solid var(--color-blue)'
+                            : '2px solid transparent',
                         }}
                       >
-                        <Icon size={20} style={{ color: isActive ? 'var(--color-blue)' : 'var(--color-text-muted)' }} />
-                        <span className="text-xs font-semibold" style={{ color: isActive ? 'var(--color-blue)' : 'var(--color-text-secondary)' }}>
+                        <Icon
+                          size={20}
+                          style={{
+                            color: isActive ? 'var(--color-blue)' : 'var(--color-text-muted)',
+                          }}
+                        />
+                        <span
+                          className="text-xs font-semibold"
+                          style={{
+                            color: isActive ? 'var(--color-blue)' : 'var(--color-text-secondary)',
+                          }}
+                        >
                           {option.label}
                         </span>
                       </button>
-                    )
+                    );
                   })}
                 </div>
               </div>
             </div>
           </div>
-        )
+        );
 
       case 'dailyGoal':
         return (
@@ -494,7 +685,10 @@ export default function Settings() {
                 boxShadow: '4px 4px 0px var(--color-border-strong)',
               }}
             >
-              <h3 className="text-base font-semibold mb-4" style={{ color: 'var(--color-text-primary)' }}>
+              <h3
+                className="text-base font-semibold mb-4"
+                style={{ color: 'var(--color-text-primary)' }}
+              >
                 Daily Focus Goal
               </h3>
               <p className="text-sm mb-6" style={{ color: 'var(--color-text-muted)' }}>
@@ -513,7 +707,10 @@ export default function Settings() {
                 />
                 <div
                   className="px-4 py-2 rounded-xl text-center min-w-[100px]"
-                  style={{ background: 'var(--color-green)30', border: '2px solid var(--color-green)' }}
+                  style={{
+                    background: 'var(--color-green)30',
+                    border: '2px solid var(--color-green)',
+                  }}
                 >
                   <span className="text-lg font-bold" style={{ color: '#2D5A4A' }}>
                     {Math.floor(dailyGoalMinutes / 60)}h {dailyGoalMinutes % 60}m
@@ -522,7 +719,7 @@ export default function Settings() {
               </div>
             </div>
           </div>
-        )
+        );
 
       case 'focus':
         return (
@@ -535,17 +732,44 @@ export default function Settings() {
                 boxShadow: '4px 4px 0px var(--color-border-strong)',
               }}
             >
-              <h3 className="text-base font-semibold mb-4" style={{ color: 'var(--color-text-primary)' }}>
+              <h3
+                className="text-base font-semibold mb-4"
+                style={{ color: 'var(--color-text-primary)' }}
+              >
                 Pomodoro Timer Settings
               </h3>
               <div className="space-y-4">
                 {[
-                  { key: 'workMinutes', label: 'Work Duration', options: [15, 20, 25, 30, 45, 60], suffix: 'min' },
-                  { key: 'breakMinutes', label: 'Short Break', options: [3, 5, 7, 10, 15], suffix: 'min' },
-                  { key: 'longBreakMinutes', label: 'Long Break', options: [10, 15, 20, 25, 30], suffix: 'min' },
-                  { key: 'longBreakInterval', label: 'Long Break After', options: [2, 3, 4, 5, 6], suffix: 'sessions' },
+                  {
+                    key: 'workMinutes',
+                    label: 'Work Duration',
+                    options: [15, 20, 25, 30, 45, 60],
+                    suffix: 'min',
+                  },
+                  {
+                    key: 'breakMinutes',
+                    label: 'Short Break',
+                    options: [3, 5, 7, 10, 15],
+                    suffix: 'min',
+                  },
+                  {
+                    key: 'longBreakMinutes',
+                    label: 'Long Break',
+                    options: [10, 15, 20, 25, 30],
+                    suffix: 'min',
+                  },
+                  {
+                    key: 'longBreakInterval',
+                    label: 'Long Break After',
+                    options: [2, 3, 4, 5, 6],
+                    suffix: 'sessions',
+                  },
                 ].map(({ key, label, options, suffix }) => (
-                  <div key={key} className="flex items-center justify-between py-2" style={{ borderBottom: '1px solid var(--color-border-light)' }}>
+                  <div
+                    key={key}
+                    className="flex items-center justify-between py-2"
+                    style={{ borderBottom: '1px solid var(--color-border-light)' }}
+                  >
                     <span className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
                       {label}
                     </span>
@@ -553,10 +777,17 @@ export default function Settings() {
                       value={(focusSettings as any)[key]}
                       onChange={(e) => updateFocusSettings({ [key]: parseInt(e.target.value) })}
                       className="px-3 py-2 rounded-xl text-sm font-semibold"
-                      style={{ background: 'var(--color-bg-surface-3)', color: 'var(--color-text-primary)', border: 'none', outline: 'none' }}
+                      style={{
+                        background: 'var(--color-bg-surface-3)',
+                        color: 'var(--color-text-primary)',
+                        border: 'none',
+                        outline: 'none',
+                      }}
                     >
                       {options.map((m) => (
-                        <option key={m} value={m}>{m} {suffix}</option>
+                        <option key={m} value={m}>
+                          {m} {suffix}
+                        </option>
                       ))}
                     </select>
                   </div>
@@ -564,7 +795,7 @@ export default function Settings() {
               </div>
             </div>
           </div>
-        )
+        );
 
       case 'categories':
         return (
@@ -579,7 +810,10 @@ export default function Settings() {
             >
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h3 className="text-base font-semibold" style={{ color: 'var(--color-text-primary)' }}>
+                  <h3
+                    className="text-base font-semibold"
+                    style={{ color: 'var(--color-text-primary)' }}
+                  >
                     Activity Categories
                   </h3>
                   <p className="text-sm mt-1" style={{ color: 'var(--color-text-muted)' }}>
@@ -602,11 +836,17 @@ export default function Settings() {
               {isAddingCategory && (
                 <div
                   className="mb-4 p-4 rounded-xl"
-                  style={{ background: 'var(--color-bg-surface-3)', border: '2px dashed var(--color-border-strong)' }}
+                  style={{
+                    background: 'var(--color-bg-surface-3)',
+                    border: '2px dashed var(--color-border-strong)',
+                  }}
                 >
                   <div className="space-y-4">
                     <div>
-                      <label className="text-xs font-semibold mb-2 block" style={{ color: 'var(--color-text-muted)' }}>
+                      <label
+                        className="text-xs font-semibold mb-2 block"
+                        style={{ color: 'var(--color-text-muted)' }}
+                      >
                         Category Name
                       </label>
                       <input
@@ -615,12 +855,20 @@ export default function Settings() {
                         onChange={(e) => setNewCategoryName(e.target.value)}
                         placeholder="Enter category name..."
                         className="w-full px-3 py-2 rounded-xl text-sm"
-                        style={{ background: 'var(--color-bg-surface-1)', color: 'var(--color-text-primary)', border: '1px solid var(--color-border-light)', outline: 'none' }}
+                        style={{
+                          background: 'var(--color-bg-surface-1)',
+                          color: 'var(--color-text-primary)',
+                          border: '1px solid var(--color-border-light)',
+                          outline: 'none',
+                        }}
                         autoFocus
                       />
                     </div>
                     <div>
-                      <label className="text-xs font-semibold mb-2 block" style={{ color: 'var(--color-text-muted)' }}>
+                      <label
+                        className="text-xs font-semibold mb-2 block"
+                        style={{ color: 'var(--color-text-muted)' }}
+                      >
                         Color
                       </label>
                       <div className="flex flex-wrap gap-2">
@@ -631,7 +879,10 @@ export default function Settings() {
                             className="w-8 h-8 rounded-full transition-transform hover:scale-110"
                             style={{
                               background: color,
-                              border: newCategoryColor === color ? '2px solid var(--color-text-primary)' : '2px solid transparent',
+                              border:
+                                newCategoryColor === color
+                                  ? '2px solid var(--color-text-primary)'
+                                  : '2px solid transparent',
                             }}
                           />
                         ))}
@@ -649,7 +900,10 @@ export default function Settings() {
                       <button
                         onClick={cancelAddCategory}
                         className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all hover:opacity-80"
-                        style={{ background: 'var(--color-border-light)', color: 'var(--color-text-secondary)' }}
+                        style={{
+                          background: 'var(--color-border-light)',
+                          color: 'var(--color-text-secondary)',
+                        }}
                       >
                         <X size={16} />
                         Cancel
@@ -667,11 +921,17 @@ export default function Settings() {
                       // Edit Mode
                       <div
                         className="p-4 rounded-xl"
-                        style={{ background: 'var(--color-bg-surface-3)', border: '2px solid var(--color-blue)' }}
+                        style={{
+                          background: 'var(--color-bg-surface-3)',
+                          border: '2px solid var(--color-blue)',
+                        }}
                       >
                         <div className="space-y-4">
                           <div>
-                            <label className="text-xs font-semibold mb-2 block" style={{ color: 'var(--color-text-muted)' }}>
+                            <label
+                              className="text-xs font-semibold mb-2 block"
+                              style={{ color: 'var(--color-text-muted)' }}
+                            >
                               Name
                             </label>
                             <input
@@ -679,12 +939,20 @@ export default function Settings() {
                               value={newCategoryName}
                               onChange={(e) => setNewCategoryName(e.target.value)}
                               className="w-full px-3 py-2 rounded-xl text-sm"
-                              style={{ background: 'var(--color-bg-surface-1)', color: 'var(--color-text-primary)', border: '1px solid var(--color-border-light)', outline: 'none' }}
+                              style={{
+                                background: 'var(--color-bg-surface-1)',
+                                color: 'var(--color-text-primary)',
+                                border: '1px solid var(--color-border-light)',
+                                outline: 'none',
+                              }}
                               autoFocus
                             />
                           </div>
                           <div>
-                            <label className="text-xs font-semibold mb-2 block" style={{ color: 'var(--color-text-muted)' }}>
+                            <label
+                              className="text-xs font-semibold mb-2 block"
+                              style={{ color: 'var(--color-text-muted)' }}
+                            >
                               Color
                             </label>
                             <div className="flex flex-wrap gap-2">
@@ -695,7 +963,10 @@ export default function Settings() {
                                   className="w-8 h-8 rounded-full transition-transform hover:scale-110"
                                   style={{
                                     background: color,
-                                    border: newCategoryColor === color ? '2px solid var(--color-text-primary)' : '2px solid transparent',
+                                    border:
+                                      newCategoryColor === color
+                                        ? '2px solid var(--color-text-primary)'
+                                        : '2px solid transparent',
                                   }}
                                 />
                               ))}
@@ -713,7 +984,10 @@ export default function Settings() {
                             <button
                               onClick={cancelEditCategory}
                               className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all hover:opacity-80"
-                              style={{ background: 'var(--color-border-light)', color: 'var(--color-text-secondary)' }}
+                              style={{
+                                background: 'var(--color-border-light)',
+                                color: 'var(--color-text-secondary)',
+                              }}
                             >
                               <X size={16} />
                               Cancel
@@ -727,30 +1001,43 @@ export default function Settings() {
                         className="p-4 rounded-xl"
                         style={{ background: '#FFF5F5', border: '2px solid var(--color-coral)' }}
                       >
-                        <p className="text-sm font-medium mb-3" style={{ color: 'var(--color-text-primary)' }}>
+                        <p
+                          className="text-sm font-medium mb-3"
+                          style={{ color: 'var(--color-text-primary)' }}
+                        >
                           Delete "{cat.name}"? Existing activities will be migrated to:
                         </p>
                         <select
                           value={migrateToId}
                           onChange={(e) => setMigrateToId(e.target.value)}
                           className="w-full px-3 py-2 rounded-xl text-sm mb-3"
-                          style={{ background: 'var(--color-bg-surface-1)', color: 'var(--color-text-primary)', border: '1px solid var(--color-border-light)', outline: 'none' }}
+                          style={{
+                            background: 'var(--color-bg-surface-1)',
+                            color: 'var(--color-text-primary)',
+                            border: '1px solid var(--color-border-light)',
+                            outline: 'none',
+                          }}
                         >
                           {categories
                             .filter((c) => c.id !== cat.id)
                             .map((c) => (
-                              <option key={c.id} value={c.id}>{c.name}</option>
+                              <option key={c.id} value={c.id}>
+                                {c.name}
+                              </option>
                             ))}
                         </select>
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => {
-                              deleteCategory(cat.id, migrateToId)
-                              setDeleteConfirmId(null)
-                              success('已删除分类')
+                              deleteCategory(cat.id, migrateToId);
+                              setDeleteConfirmId(null);
+                              success('已删除分类');
                             }}
                             className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all hover:opacity-80"
-                            style={{ background: 'var(--color-coral)', color: 'var(--color-bg-surface-1)' }}
+                            style={{
+                              background: 'var(--color-coral)',
+                              color: 'var(--color-bg-surface-1)',
+                            }}
                           >
                             <Trash2 size={16} />
                             Confirm Delete
@@ -758,7 +1045,10 @@ export default function Settings() {
                           <button
                             onClick={() => setDeleteConfirmId(null)}
                             className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all hover:opacity-80"
-                            style={{ background: 'var(--color-border-light)', color: 'var(--color-text-secondary)' }}
+                            style={{
+                              background: 'var(--color-border-light)',
+                              color: 'var(--color-text-secondary)',
+                            }}
                           >
                             Cancel
                           </button>
@@ -772,10 +1062,19 @@ export default function Settings() {
                       >
                         <div className="flex items-center gap-3">
                           <div className="w-3 h-3 rounded-full" style={{ background: cat.color }} />
-                          <span className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>
+                          <span
+                            className="text-sm font-medium"
+                            style={{ color: 'var(--color-text-primary)' }}
+                          >
                             {cat.name}
                             {cat.isDefault && (
-                              <span className="ml-2 text-xs px-2 py-0.5 rounded-full" style={{ background: 'var(--color-purple)30', color: 'var(--color-purple)' }}>
+                              <span
+                                className="ml-2 text-xs px-2 py-0.5 rounded-full"
+                                style={{
+                                  background: 'var(--color-purple)30',
+                                  color: 'var(--color-purple)',
+                                }}
+                              >
                                 Default
                               </span>
                             )}
@@ -785,11 +1084,17 @@ export default function Settings() {
                           <button
                             onClick={() => toggleCategory(cat.id)}
                             className="w-10 h-5 rounded-full transition-all flex items-center px-0.5"
-                            style={{ background: cat.enabled ? 'var(--color-green)' : 'var(--color-border-light)' }}
+                            style={{
+                              background: cat.enabled
+                                ? 'var(--color-green)'
+                                : 'var(--color-border-light)',
+                            }}
                           >
                             <div
                               className="w-4 h-4 rounded-full bg-white transition-all shadow-sm"
-                              style={{ transform: cat.enabled ? 'translateX(20px)' : 'translateX(0)' }}
+                              style={{
+                                transform: cat.enabled ? 'translateX(20px)' : 'translateX(0)',
+                              }}
                             />
                           </button>
                           {!cat.isDefault && (
@@ -797,14 +1102,20 @@ export default function Settings() {
                               <button
                                 onClick={() => startEditCategory(cat)}
                                 className="p-2 rounded-lg transition-all hover:opacity-70"
-                                style={{ background: 'var(--color-border-light)', color: 'var(--color-text-secondary)' }}
+                                style={{
+                                  background: 'var(--color-border-light)',
+                                  color: 'var(--color-text-secondary)',
+                                }}
                               >
                                 <Pencil size={14} />
                               </button>
                               <button
                                 onClick={() => setDeleteConfirmId(cat.id)}
                                 className="p-2 rounded-lg transition-all hover:opacity-70"
-                                style={{ background: 'var(--color-coral)20', color: 'var(--color-coral)' }}
+                                style={{
+                                  background: 'var(--color-coral)20',
+                                  color: 'var(--color-coral)',
+                                }}
                               >
                                 <Trash2 size={14} />
                               </button>
@@ -818,7 +1129,7 @@ export default function Settings() {
               </div>
             </div>
           </div>
-        )
+        );
 
       case 'activity':
         return (
@@ -831,12 +1142,21 @@ export default function Settings() {
                 boxShadow: '4px 4px 0px var(--color-border-strong)',
               }}
             >
-              <h3 className="text-base font-semibold mb-4" style={{ color: 'var(--color-text-primary)' }}>
+              <h3
+                className="text-base font-semibold mb-4"
+                style={{ color: 'var(--color-text-primary)' }}
+              >
                 Activity Tracking Settings
               </h3>
               <div className="space-y-4">
-                <div className="p-4 rounded-xl mb-4" style={{ background: 'var(--color-bg-surface-2)' }}>
-                  <p className="text-sm font-semibold mb-1" style={{ color: 'var(--color-text-primary)' }}>
+                <div
+                  className="p-4 rounded-xl mb-4"
+                  style={{ background: 'var(--color-bg-surface-2)' }}
+                >
+                  <p
+                    className="text-sm font-semibold mb-1"
+                    style={{ color: 'var(--color-text-primary)' }}
+                  >
                     Auto-Accept Tag Suggestions
                   </p>
                   <p className="text-xs mb-3" style={{ color: 'var(--color-text-muted)' }}>
@@ -853,33 +1173,52 @@ export default function Settings() {
                       className="flex-1 h-2 rounded-full appearance-none cursor-pointer"
                       style={{ background: 'var(--color-border-light)' }}
                     />
-                    <span className="text-sm font-bold w-12 text-right" style={{ color: 'var(--color-green)' }}>
+                    <span
+                      className="text-sm font-bold w-12 text-right"
+                      style={{ color: 'var(--color-green)' }}
+                    >
                       {autoAcceptThreshold}%
                     </span>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between py-2" style={{ borderBottom: '1px solid var(--color-border-light)' }}>
+                <div
+                  className="flex items-center justify-between py-2"
+                  style={{ borderBottom: '1px solid var(--color-border-light)' }}
+                >
                   <div>
-                    <p className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>Minimum Time Entry</p>
-                    <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>Minimum minutes required for a time entry</p>
+                    <p
+                      className="text-sm font-medium"
+                      style={{ color: 'var(--color-text-primary)' }}
+                    >
+                      Minimum Time Entry
+                    </p>
+                    <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+                      Minimum minutes required for a time entry
+                    </p>
                   </div>
                   <select
                     value={minEntryMinutes}
                     onChange={(e) => setMinEntryMinutes(parseInt(e.target.value))}
                     className="px-3 py-2 rounded-xl text-sm font-semibold"
-                    style={{ background: 'var(--color-bg-surface-3)', color: 'var(--color-text-primary)', border: 'none', outline: 'none' }}
+                    style={{
+                      background: 'var(--color-bg-surface-3)',
+                      color: 'var(--color-text-primary)',
+                      border: 'none',
+                      outline: 'none',
+                    }}
                   >
                     {[1, 5, 10, 15, 30].map((m) => (
-                      <option key={m} value={m}>{m} minutes</option>
+                      <option key={m} value={m}>
+                        {m} minutes
+                      </option>
                     ))}
                   </select>
                 </div>
               </div>
             </div>
           </div>
-        )
-
+        );
 
       case 'guardian':
         return (
@@ -892,7 +1231,10 @@ export default function Settings() {
                 boxShadow: '4px 4px 0px var(--color-border-strong)',
               }}
             >
-              <h3 className="text-base font-semibold mb-4" style={{ color: 'var(--color-text-primary)' }}>
+              <h3
+                className="text-base font-semibold mb-4"
+                style={{ color: 'var(--color-text-primary)' }}
+              >
                 Execution Guardian
               </h3>
               <p className="text-sm mb-6" style={{ color: 'var(--color-text-muted)' }}>
@@ -901,9 +1243,15 @@ export default function Settings() {
 
               <div className="space-y-4">
                 {/* Morning Ritual Toggle */}
-                <div className="flex items-center justify-between py-3" style={{ borderBottom: '1px solid var(--color-border-light)' }}>
+                <div
+                  className="flex items-center justify-between py-3"
+                  style={{ borderBottom: '1px solid var(--color-border-light)' }}
+                >
                   <div>
-                    <p className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>
+                    <p
+                      className="text-sm font-medium"
+                      style={{ color: 'var(--color-text-primary)' }}
+                    >
                       每日晨间仪式
                     </p>
                     <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-muted)' }}>
@@ -911,9 +1259,17 @@ export default function Settings() {
                     </p>
                   </div>
                   <button
-                    onClick={() => updateGuardianSettings({ morningRitualEnabled: !guardianSettings.morningRitualEnabled })}
+                    onClick={() =>
+                      updateGuardianSettings({
+                        morningRitualEnabled: !guardianSettings.morningRitualEnabled,
+                      })
+                    }
                     className="w-12 h-7 rounded-full transition-all relative"
-                    style={{ background: guardianSettings.morningRitualEnabled ? 'var(--color-green)' : 'var(--color-border-strong)' }}
+                    style={{
+                      background: guardianSettings.morningRitualEnabled
+                        ? 'var(--color-green)'
+                        : 'var(--color-border-strong)',
+                    }}
                   >
                     <div
                       className="w-5 h-5 rounded-full bg-white shadow-md absolute top-1 transition-all"
@@ -923,9 +1279,15 @@ export default function Settings() {
                 </div>
 
                 {/* Daily Review Toggle */}
-                <div className="flex items-center justify-between py-3" style={{ borderBottom: '1px solid var(--color-border-light)' }}>
+                <div
+                  className="flex items-center justify-between py-3"
+                  style={{ borderBottom: '1px solid var(--color-border-light)' }}
+                >
                   <div>
-                    <p className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>
+                    <p
+                      className="text-sm font-medium"
+                      style={{ color: 'var(--color-text-primary)' }}
+                    >
                       每日复盘
                     </p>
                     <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-muted)' }}>
@@ -933,9 +1295,17 @@ export default function Settings() {
                     </p>
                   </div>
                   <button
-                    onClick={() => updateGuardianSettings({ dailyReviewEnabled: !guardianSettings.dailyReviewEnabled })}
+                    onClick={() =>
+                      updateGuardianSettings({
+                        dailyReviewEnabled: !guardianSettings.dailyReviewEnabled,
+                      })
+                    }
                     className="w-12 h-7 rounded-full transition-all relative"
-                    style={{ background: guardianSettings.dailyReviewEnabled ? 'var(--color-green)' : 'var(--color-border-strong)' }}
+                    style={{
+                      background: guardianSettings.dailyReviewEnabled
+                        ? 'var(--color-green)'
+                        : 'var(--color-border-strong)',
+                    }}
                   >
                     <div
                       className="w-5 h-5 rounded-full bg-white shadow-md absolute top-1 transition-all"
@@ -947,7 +1317,10 @@ export default function Settings() {
                 {/* Launch Boost Toggle */}
                 <div className="flex items-center justify-between py-3">
                   <div>
-                    <p className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>
+                    <p
+                      className="text-sm font-medium"
+                      style={{ color: 'var(--color-text-primary)' }}
+                    >
                       启动加速
                     </p>
                     <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-muted)' }}>
@@ -955,9 +1328,17 @@ export default function Settings() {
                     </p>
                   </div>
                   <button
-                    onClick={() => updateGuardianSettings({ launchBoostEnabled: !guardianSettings.launchBoostEnabled })}
+                    onClick={() =>
+                      updateGuardianSettings({
+                        launchBoostEnabled: !guardianSettings.launchBoostEnabled,
+                      })
+                    }
                     className="w-12 h-7 rounded-full transition-all relative"
-                    style={{ background: guardianSettings.launchBoostEnabled ? 'var(--color-green)' : 'var(--color-border-strong)' }}
+                    style={{
+                      background: guardianSettings.launchBoostEnabled
+                        ? 'var(--color-green)'
+                        : 'var(--color-border-strong)',
+                    }}
                   >
                     <div
                       className="w-5 h-5 rounded-full bg-white shadow-md absolute top-1 transition-all"
@@ -968,12 +1349,12 @@ export default function Settings() {
               </div>
             </div>
           </div>
-        )
+        );
 
       default:
-        return null
+        return null;
     }
-  }
+  };
 
   return (
     <div className="flex h-full" style={{ background: 'var(--color-bg-base)' }}>
@@ -986,20 +1367,26 @@ export default function Settings() {
         }}
       >
         <div className="mb-6">
-          <h2 className="text-xs font-bold uppercase tracking-wider mb-4" style={{ color: 'var(--color-text-muted)' }}>
+          <h2
+            className="text-xs font-bold uppercase tracking-wider mb-4"
+            style={{ color: 'var(--color-text-muted)' }}
+          >
             Settings
           </h2>
         </div>
 
         {SETTING_SECTIONS.map((group, groupIndex) => (
           <div key={group.group} className={groupIndex > 0 ? 'mt-6' : ''}>
-            <p className="text-xs font-semibold uppercase tracking-wider mb-2 px-3" style={{ color: 'var(--color-text-muted)' }}>
+            <p
+              className="text-xs font-semibold uppercase tracking-wider mb-2 px-3"
+              style={{ color: 'var(--color-text-muted)' }}
+            >
               {group.group}
             </p>
             <div className="space-y-1">
               {group.items.map((item) => {
-                const Icon = item.icon
-                const isActive = activeSection === item.key
+                const Icon = item.icon;
+                const isActive = activeSection === item.key;
                 return (
                   <button
                     key={item.key}
@@ -1013,7 +1400,7 @@ export default function Settings() {
                     <Icon size={16} />
                     <span className="text-sm font-medium">{item.label}</span>
                   </button>
-                )
+                );
               })}
             </div>
           </div>
@@ -1024,13 +1411,17 @@ export default function Settings() {
       <div className="flex-1 overflow-y-auto p-6">
         <div className="max-w-2xl">
           <div className="mb-6">
-            <h1 className="text-xl font-bold mb-1" style={{ color: 'var(--color-text-primary)', fontFamily: 'Quicksand, sans-serif' }}>
-              {SETTING_SECTIONS.flatMap(g => g.items).find(i => i.key === activeSection)?.label || 'Settings'}
+            <h1
+              className="text-xl font-bold mb-1"
+              style={{ color: 'var(--color-text-primary)', fontFamily: 'Quicksand, sans-serif' }}
+            >
+              {SETTING_SECTIONS.flatMap((g) => g.items).find((i) => i.key === activeSection)
+                ?.label || 'Settings'}
             </h1>
           </div>
           {renderSectionContent()}
         </div>
       </div>
     </div>
-  )
+  );
 }

@@ -1,10 +1,10 @@
-import { useState } from 'react'
-import { Sun, Calendar } from 'lucide-react'
-import { useAppStore } from '../store/useAppStore'
+import { useState } from 'react';
+import { Sun, Calendar } from 'lucide-react';
+import { useAppStore } from '../store/useAppStore';
 
 function todayStr(): string {
-  const d = new Date()
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
 // Morning Ritual - daily onboarding flow
@@ -12,33 +12,33 @@ export default function MorningRitual({
   isOpen,
   onComplete,
 }: {
-  isOpen: boolean
-  onComplete: () => void
+  isOpen: boolean;
+  onComplete: () => void;
 }) {
-  const tasks = useAppStore((s) => s.tasks)
-  const getRecommendedTask = useAppStore((s) => s.getRecommendedTask)
-  const setLastMorningRitualDate = useAppStore((s) => s.setLastMorningRitualDate)
+  const tasks = useAppStore((s) => s.tasks);
+  const getRecommendedTask = useAppStore((s) => s.getRecommendedTask);
+  const setLastMorningRitualDate = useAppStore((s) => s.setLastMorningRitualDate);
 
-  const [step, setStep] = useState(0)
-  const [firstAction, setFirstAction] = useState('')
+  const [step, setStep] = useState(0);
+  const [firstAction, setFirstAction] = useState('');
 
-  if (!isOpen) return null
+  if (!isOpen) return null;
 
-  const pendingTasks = tasks.filter((t) => t.status !== 'completed')
-  const recommendedTask = getRecommendedTask()
+  const pendingTasks = tasks.filter((t) => t.status !== 'completed');
+  const recommendedTask = getRecommendedTask();
 
   const handleComplete = () => {
-    setLastMorningRitualDate(todayStr())
-    onComplete()
-    setStep(0)
-  }
+    setLastMorningRitualDate(todayStr());
+    onComplete();
+    setStep(0);
+  };
 
   // Greeting step
   if (step === 0) {
-    const hour = new Date().getHours()
-    let greeting = '早上好！'
-    if (hour >= 12 && hour < 14) greeting = '中午好！'
-    if (hour >= 14) greeting = '下午好！'
+    const hour = new Date().getHours();
+    let greeting = '早上好！';
+    if (hour >= 12 && hour < 14) greeting = '中午好！';
+    if (hour >= 14) greeting = '下午好！';
 
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
@@ -50,8 +50,10 @@ export default function MorningRitual({
             boxShadow: '4px 4px 0px var(--color-border-strong)',
           }}
         >
-          <div className="flex items-center justify-center w-20 h-20 mx-auto mb-6 rounded-full"
-            style={{ background: 'var(--color-accent-soft)' }}>
+          <div
+            className="flex items-center justify-center w-20 h-20 mx-auto mb-6 rounded-full"
+            style={{ background: 'var(--color-accent-soft)' }}
+          >
             <Sun size={36} style={{ color: 'var(--color-accent)' }} />
           </div>
 
@@ -64,7 +66,13 @@ export default function MorningRitual({
           </p>
 
           <div className="space-y-3 mb-8 text-left">
-            <div className="flex items-center gap-3 p-3 rounded-[16px]" style={{ background: 'var(--color-bg-surface-2)', border: '1px solid var(--color-border-subtle)' }}>
+            <div
+              className="flex items-center gap-3 p-3 rounded-[16px]"
+              style={{
+                background: 'var(--color-bg-surface-2)',
+                border: '1px solid var(--color-border-subtle)',
+              }}
+            >
               <Calendar size={18} style={{ color: 'var(--color-accent)' }} />
               <div>
                 <div className="font-medium text-sm" style={{ color: 'var(--color-text-primary)' }}>
@@ -91,7 +99,7 @@ export default function MorningRitual({
           </button>
         </div>
       </div>
-    )
+    );
   }
 
   // Today's priority step
@@ -106,7 +114,10 @@ export default function MorningRitual({
             boxShadow: '4px 4px 0px var(--color-border-strong)',
           }}
         >
-          <h2 className="text-xl font-bold mb-2 text-center" style={{ color: 'var(--color-text-primary)' }}>
+          <h2
+            className="text-xl font-bold mb-2 text-center"
+            style={{ color: 'var(--color-text-primary)' }}
+          >
             今天的首要任务
           </h2>
 
@@ -133,7 +144,10 @@ export default function MorningRitual({
               )}
             </div>
           ) : (
-            <div className="p-6 rounded-xl mb-6 text-center" style={{ background: 'var(--color-bg-surface-1)' }}>
+            <div
+              className="p-6 rounded-xl mb-6 text-center"
+              style={{ background: 'var(--color-bg-surface-1)' }}
+            >
               <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
                 今天没有待办任务，享受自由时光吧！
               </p>
@@ -142,7 +156,10 @@ export default function MorningRitual({
 
           {/* First action input */}
           <div className="mb-6">
-            <label className="block mb-2 text-sm font-medium" style={{ color: 'var(--color-text-secondary)' }}>
+            <label
+              className="block mb-2 text-sm font-medium"
+              style={{ color: 'var(--color-text-secondary)' }}
+            >
               你的第一步是？
             </label>
             <input
@@ -175,7 +192,8 @@ export default function MorningRitual({
               onClick={handleComplete}
               className="flex-1 py-3 rounded-xl font-medium transition-all hover:opacity-90 hover:scale-[1.02]"
               style={{
-                background: 'linear-gradient(135deg, var(--color-accent), var(--color-accent-gradient, var(--color-accent)))',
+                background:
+                  'linear-gradient(135deg, var(--color-accent), var(--color-accent-gradient, var(--color-accent)))',
                 color: 'white',
                 boxShadow: 'var(--shadow-accent)',
               }}
@@ -185,8 +203,8 @@ export default function MorningRitual({
           </div>
         </div>
       </div>
-    )
+    );
   }
 
-  return null
+  return null;
 }

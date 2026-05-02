@@ -56,9 +56,10 @@ function generateAISummary(
   totalMinutes: number,
   categories: Record<string, number>,
   goalPct: number,
-  completedTasks: number,
+  completedTasks: number
 ): string {
-  const deepWork = (categories['开发'] || 0) + (categories['学习'] || 0) + (categories['阅读'] || 0);
+  const deepWork =
+    (categories['开发'] || 0) + (categories['学习'] || 0) + (categories['阅读'] || 0);
   const deepPct = totalMinutes > 0 ? Math.round((deepWork / totalMinutes) * 100) : 0;
 
   if (goalPct >= 100 && deepPct >= 50) {
@@ -123,7 +124,10 @@ function DonutChart({
   const innerSize = size * 0.6;
 
   return (
-    <div className="relative inline-flex items-center justify-center" style={{ width: size, height: size }}>
+    <div
+      className="relative inline-flex items-center justify-center"
+      style={{ width: size, height: size }}
+    >
       <div
         className="absolute inset-0 rounded-full"
         style={{
@@ -139,7 +143,9 @@ function DonutChart({
         }}
       >
         <div className="text-center">
-          <div className="text-lg font-bold text-[var(--color-text-primary)]">{formatMinutesShort(total)}</div>
+          <div className="text-lg font-bold text-[var(--color-text-primary)]">
+            {formatMinutesShort(total)}
+          </div>
           <div className="text-[10px] text-[var(--color-text-muted)]">总计</div>
         </div>
       </div>
@@ -163,7 +169,10 @@ function ProgressRing({
   const offset = circumference - (clamped / 100) * circumference;
 
   return (
-    <div className="relative inline-flex items-center justify-center" style={{ width: size, height: size }}>
+    <div
+      className="relative inline-flex items-center justify-center"
+      style={{ width: size, height: size }}
+    >
       <svg width={size} height={size} className="-rotate-90">
         <circle
           cx={size / 2}
@@ -219,7 +228,7 @@ export default function DailySummary({ isOpen, onClose, date }: DailySummaryProp
       const stats = await dataService.getDailyStats(dateStr);
       const activities = await dataService.getActivities(dateStr);
       const focusSessions = await dataService.getFocusSessions(dateStr);
-      const pet = await dataService.getPet() || null;
+      const pet = (await dataService.getPet()) || null;
 
       // Focus / break time
       const focusMinutes = focusSessions
@@ -230,7 +239,8 @@ export default function DailySummary({ isOpen, onClose, date }: DailySummaryProp
         .reduce((sum: number, s: FocusSession) => sum + s.duration, 0);
 
       // Goal completion
-      const goalPct = dailyGoalMinutes > 0 ? Math.round((stats.totalMinutes / dailyGoalMinutes) * 100) : 0;
+      const goalPct =
+        dailyGoalMinutes > 0 ? Math.round((stats.totalMinutes / dailyGoalMinutes) * 100) : 0;
 
       // Task stats
       const completedTasks = tasks.filter((t) => t.status === 'completed').length;
@@ -255,7 +265,12 @@ export default function DailySummary({ isOpen, onClose, date }: DailySummaryProp
         .sort((a, b) => (b.value as number) - (a.value as number));
 
       // AI summary
-      const aiSummary = generateAISummary(stats.totalMinutes, stats.categories, goalPct, completedTasks);
+      const aiSummary = generateAISummary(
+        stats.totalMinutes,
+        stats.categories,
+        goalPct,
+        completedTasks
+      );
       const suggestions = generateSuggestions(stats.categories, goalPct);
 
       setData({
@@ -445,7 +460,8 @@ export default function DailySummary({ isOpen, onClose, date }: DailySummaryProp
           <h4 className="text-sm font-semibold text-[var(--color-text-primary)] mb-3">分类详情</h4>
           <div className="space-y-2.5">
             {data.segments.slice(0, 5).map((seg) => {
-              const pct = data.totalMinutes > 0 ? Math.round((seg.value / data.totalMinutes) * 100) : 0;
+              const pct =
+                data.totalMinutes > 0 ? Math.round((seg.value / data.totalMinutes) * 100) : 0;
               return (
                 <div key={seg.label} className="flex items-center gap-3">
                   <div
@@ -531,7 +547,11 @@ export default function DailySummary({ isOpen, onClose, date }: DailySummaryProp
             }}
           >
             <div className="text-3xl flex-shrink-0">
-              {data.pet.type === 'cat' ? '\u{1F431}' : data.pet.type === 'dog' ? '\u{1F436}' : '\u{1F430}'}
+              {data.pet.type === 'cat'
+                ? '\u{1F431}'
+                : data.pet.type === 'dog'
+                  ? '\u{1F436}'
+                  : '\u{1F430}'}
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
@@ -544,12 +564,16 @@ export default function DailySummary({ isOpen, onClose, date }: DailySummaryProp
                 <div className="flex items-center gap-1.5">
                   <span className="text-xs text-[var(--color-text-muted)]">心情</span>
                   <Progress value={data.pet.mood} size="sm" color="#f59e0b" className="w-16" />
-                  <span className="text-[10px] tabular-nums text-[var(--color-text-muted)]">{data.pet.mood}%</span>
+                  <span className="text-[10px] tabular-nums text-[var(--color-text-muted)]">
+                    {data.pet.mood}%
+                  </span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <span className="text-xs text-[var(--color-text-muted)]">饱腹</span>
                   <Progress value={data.pet.hunger} size="sm" color="#22c55e" className="w-16" />
-                  <span className="text-[10px] tabular-nums text-[var(--color-text-muted)]">{data.pet.hunger}%</span>
+                  <span className="text-[10px] tabular-nums text-[var(--color-text-muted)]">
+                    {data.pet.hunger}%
+                  </span>
                 </div>
               </div>
               <div className="text-[10px] text-[var(--color-text-muted)] mt-1">
@@ -572,7 +596,10 @@ export default function DailySummary({ isOpen, onClose, date }: DailySummaryProp
           </h4>
           <ul className="space-y-2">
             {data.suggestions.map((s, i) => (
-              <li key={i} className="flex items-start gap-2 text-xs text-[var(--color-text-secondary)]">
+              <li
+                key={i}
+                className="flex items-start gap-2 text-xs text-[var(--color-text-secondary)]"
+              >
                 <span
                   className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 text-[10px] font-bold"
                   style={{

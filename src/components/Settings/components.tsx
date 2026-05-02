@@ -1,10 +1,10 @@
 // Shared UI components for Settings page
 
 /* ── Fade-in animation keyframes (injected once) ── */
-const STYLE_ID = 'settings-animations'
+const STYLE_ID = 'settings-animations';
 if (typeof document !== 'undefined' && !document.getElementById(STYLE_ID)) {
-  const style = document.createElement('style')
-  style.id = STYLE_ID
+  const style = document.createElement('style');
+  style.id = STYLE_ID;
   style.textContent = `
     @keyframes settingsFadeInUp {
       from { opacity: 0; transform: translateY(12px); }
@@ -21,8 +21,8 @@ if (typeof document !== 'undefined' && !document.getElementById(STYLE_ID)) {
     .settings-check-pop {
       animation: settingsCheckPop 0.25s ease-out both;
     }
-  `
-  document.head.appendChild(style)
+  `;
+  document.head.appendChild(style);
 }
 
 /* ── Section wrapper — warm gradient card ── */
@@ -31,23 +31,23 @@ export function Section({
   children,
   index = 0,
 }: {
-  title: string
-  children: React.ReactNode
-  index?: number
+  title: string;
+  children: React.ReactNode;
+  index?: number;
 }) {
   return (
-    <div
-      className="settings-section-fade"
-      style={{ animationDelay: `${index * 80}ms` }}
-    >
-      <div className="!p-0 overflow-hidden" style={{
-        background:
-          'linear-gradient(135deg, var(--color-bg-surface-1) 0%, var(--color-bg-surface-2) 100%)',
-        border: '1px solid var(--color-border-subtle)',
-        borderRadius: 'var(--radius-xl)',
-        boxShadow: 'var(--shadow-card), 0 2px 8px rgba(44,24,16,0.04)',
-        padding: 0,
-      }}>
+    <div className="settings-section-fade" style={{ animationDelay: `${index * 80}ms` }}>
+      <div
+        className="!p-0 overflow-hidden"
+        style={{
+          background:
+            'linear-gradient(135deg, var(--color-bg-surface-1) 0%, var(--color-bg-surface-2) 100%)',
+          border: '1px solid var(--color-border-subtle)',
+          borderRadius: 'var(--radius-xl)',
+          boxShadow: 'var(--shadow-card), 0 2px 8px rgba(44,24,16,0.04)',
+          padding: 0,
+        }}
+      >
         {/* Section title with accent left border */}
         <div className="p-6 space-y-5">
           <div className="flex items-center gap-3">
@@ -60,10 +60,7 @@ export function Section({
                 flexShrink: 0,
               }}
             />
-            <h3
-              className="text-base font-bold"
-              style={{ color: 'var(--color-text-primary)' }}
-            >
+            <h3 className="text-base font-bold" style={{ color: 'var(--color-text-primary)' }}>
               {title}
             </h3>
           </div>
@@ -71,7 +68,7 @@ export function Section({
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 /* ── Toggle switch — pill-shaped with smooth transitions ── */
@@ -79,8 +76,8 @@ export function Toggle({
   checked,
   onChange,
 }: {
-  checked: boolean
-  onChange: (v: boolean) => void
+  checked: boolean;
+  onChange: (v: boolean) => void;
 }) {
   return (
     <button
@@ -97,9 +94,7 @@ export function Toggle({
         cursor: 'pointer',
         border: 'none',
         padding: 0,
-        backgroundColor: checked
-          ? 'var(--color-accent)'
-          : 'var(--color-border-subtle)',
+        backgroundColor: checked ? 'var(--color-accent)' : 'var(--color-border-subtle)',
         transition: 'background-color 0.3s ease, box-shadow 0.3s ease',
         boxShadow: checked
           ? '0 0 0 2px rgba(44,24,16,0.04), inset 0 1px 2px rgba(44,24,16,0.08)'
@@ -121,7 +116,7 @@ export function Toggle({
         }}
       />
     </button>
-  )
+  );
 }
 
 /* ── Number input helper — clean with accent focus ring ── */
@@ -133,19 +128,16 @@ export function NumberField({
   max = 120,
   suffix,
 }: {
-  label: string
-  value: number
-  onChange: (v: number) => void
-  min?: number
-  max?: number
-  suffix?: string
+  label: string;
+  value: number;
+  onChange: (v: number) => void;
+  min?: number;
+  max?: number;
+  suffix?: string;
 }) {
   return (
     <div className="flex items-center justify-between">
-      <span
-        className="text-sm"
-        style={{ color: 'var(--color-text-secondary)' }}
-      >
+      <span className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
         {label}
       </span>
       <div className="flex items-center gap-2">
@@ -155,8 +147,8 @@ export function NumberField({
           max={max}
           value={value}
           onChange={(e) => {
-            const n = parseInt(e.target.value, 10)
-            if (!isNaN(n) && n >= min && n <= max) onChange(n)
+            const n = parseInt(e.target.value, 10);
+            if (!isNaN(n) && n >= min && n <= max) onChange(n);
           }}
           style={{
             width: 72,
@@ -171,24 +163,20 @@ export function NumberField({
             transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
           }}
           onFocus={(e) => {
-            e.currentTarget.style.borderColor = 'var(--color-accent)'
-            e.currentTarget.style.boxShadow =
-              '0 0 0 3px var(--color-accent-soft)'
+            e.currentTarget.style.borderColor = 'var(--color-accent)';
+            e.currentTarget.style.boxShadow = '0 0 0 3px var(--color-accent-soft)';
           }}
           onBlur={(e) => {
-            e.currentTarget.style.borderColor = 'var(--color-border-subtle)'
-            e.currentTarget.style.boxShadow = 'none'
+            e.currentTarget.style.borderColor = 'var(--color-border-subtle)';
+            e.currentTarget.style.boxShadow = 'none';
           }}
         />
         {suffix && (
-          <span
-            className="text-xs"
-            style={{ color: 'var(--color-text-muted)' }}
-          >
+          <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
             {suffix}
           </span>
         )}
       </div>
     </div>
-  )
+  );
 }

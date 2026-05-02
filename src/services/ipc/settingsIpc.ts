@@ -68,13 +68,17 @@ function toDbSettings(settings: Partial<AppSettings>): Partial<BackendDbSettings
   if (settings.theme !== undefined) result.theme = settings.theme;
   if (settings.colorTheme !== undefined) result.color_theme = settings.colorTheme;
   if (settings.backgroundSkin !== undefined) result.background_skin = settings.backgroundSkin;
-  if (settings.dailyGoalMinutes !== undefined) result.daily_goal_minutes = settings.dailyGoalMinutes;
+  if (settings.dailyGoalMinutes !== undefined)
+    result.daily_goal_minutes = settings.dailyGoalMinutes;
   if (settings.language !== undefined) result.language = settings.language;
   if (settings.aiApiKey !== undefined) result.ai_api_key = settings.aiApiKey;
   if (settings.aiProvider !== undefined) result.ai_provider = settings.aiProvider;
-  if (settings.autoStartOnBoot !== undefined) result.auto_start_on_boot = settings.autoStartOnBoot ? 1 : 0;
-  if (settings.blockedPatterns !== undefined) result.blocked_patterns = JSON.stringify(settings.blockedPatterns);
-  if (settings.featureFlags !== undefined) result.feature_flags = JSON.stringify(settings.featureFlags);
+  if (settings.autoStartOnBoot !== undefined)
+    result.auto_start_on_boot = settings.autoStartOnBoot ? 1 : 0;
+  if (settings.blockedPatterns !== undefined)
+    result.blocked_patterns = JSON.stringify(settings.blockedPatterns);
+  if (settings.featureFlags !== undefined)
+    result.feature_flags = JSON.stringify(settings.featureFlags);
   return result;
 }
 

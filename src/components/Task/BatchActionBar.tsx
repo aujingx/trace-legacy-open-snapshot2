@@ -1,14 +1,14 @@
-import { CheckSquare, Square, Trash2, Archive, X, Loader2 } from 'lucide-react'
+import { CheckSquare, Square, Trash2, Archive, X, Loader2 } from 'lucide-react';
 
 interface BatchActionBarProps {
-  selectedCount: number
-  totalCount: number
-  loading: boolean
-  onSelectAll: () => void
-  onClearSelection: () => void
-  onBatchComplete: () => void
-  onBatchDelete: () => void
-  onBatchArchive: () => void
+  selectedCount: number;
+  totalCount: number;
+  loading: boolean;
+  onSelectAll: () => void;
+  onClearSelection: () => void;
+  onBatchComplete: () => void;
+  onBatchDelete: () => void;
+  onBatchArchive: () => void;
 }
 
 export default function BatchActionBar({
@@ -21,9 +21,9 @@ export default function BatchActionBar({
   onBatchDelete,
   onBatchArchive,
 }: BatchActionBarProps) {
-  if (selectedCount === 0) return null
+  if (selectedCount === 0) return null;
 
-  const isAllSelected = selectedCount === totalCount
+  const isAllSelected = selectedCount === totalCount;
 
   return (
     <div
@@ -78,7 +78,11 @@ export default function BatchActionBar({
             onClick={onBatchArchive}
             disabled={loading}
             className="px-4 py-2 rounded-xl text-sm font-semibold transition-all hover:opacity-90 flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
-            style={{ background: 'var(--color-bg-surface-2)', color: 'var(--color-text-muted)', borderRadius: 'var(--radius-lg)' }}
+            style={{
+              background: 'var(--color-bg-surface-2)',
+              color: 'var(--color-text-muted)',
+              borderRadius: 'var(--radius-lg)',
+            }}
           >
             {loading ? <Loader2 size={16} className="animate-spin" /> : <Archive size={16} />}
             归档
@@ -97,5 +101,5 @@ export default function BatchActionBar({
         </div>
       </div>
     </div>
-  )
+  );
 }

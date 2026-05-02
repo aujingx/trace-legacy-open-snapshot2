@@ -1,6 +1,6 @@
-import { useState, useCallback } from 'react'
-import { useTranslation } from 'react-i18next'
-import { Modal } from './ui'
+import { useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
+import { Modal } from './ui';
 
 /**
  * "Your focus session started" popup.
@@ -8,50 +8,61 @@ import { Modal } from './ui'
  */
 
 interface FocusStartedModalProps {
-  isOpen: boolean
-  onClose: () => void
-  onViewSession?: () => void
+  isOpen: boolean;
+  onClose: () => void;
+  onViewSession?: () => void;
 }
 
 const SUGGESTED_TAGS = {
   project: ['工作项目', '个人项目', '学习', '副业', '开源'],
   client: ['内部', '客户A', '客户B', '自由职业'],
   task: ['编码', '设计', '写作', '阅读', '会议', '复习'],
-}
+};
 
-export default function FocusStartedModal({ isOpen, onClose, onViewSession }: FocusStartedModalProps) {
-  const { t } = useTranslation()
-  const [goal, setGoal] = useState('')
-  const [projectTag, setProjectTag] = useState('')
-  const [clientTag, setClientTag] = useState('')
-  const [taskTag, setTaskTag] = useState('')
-  const [showProjectSuggestions, setShowProjectSuggestions] = useState(false)
-  const [showClientSuggestions, setShowClientSuggestions] = useState(false)
-  const [showTaskSuggestions, setShowTaskSuggestions] = useState(false)
+export default function FocusStartedModal({
+  isOpen,
+  onClose,
+  onViewSession,
+}: FocusStartedModalProps) {
+  const { t } = useTranslation();
+  const [goal, setGoal] = useState('');
+  const [projectTag, setProjectTag] = useState('');
+  const [clientTag, setClientTag] = useState('');
+  const [taskTag, setTaskTag] = useState('');
+  const [showProjectSuggestions, setShowProjectSuggestions] = useState(false);
+  const [showClientSuggestions, setShowClientSuggestions] = useState(false);
+  const [showTaskSuggestions, setShowTaskSuggestions] = useState(false);
 
   const handleViewSession = useCallback(() => {
-    onViewSession?.()
-    onClose()
-  }, [onViewSession, onClose])
+    onViewSession?.();
+    onClose();
+  }, [onViewSession, onClose]);
 
   const handleDismiss = useCallback(() => {
     // Save goal to localStorage if set
     if (goal.trim()) {
       try {
-        localStorage.setItem('trace-current-focus-goal', goal.trim())
-      } catch { /* noop */ }
+        localStorage.setItem('trace-current-focus-goal', goal.trim());
+      } catch {
+        /* noop */
+      }
     }
     if (projectTag.trim() || clientTag.trim() || taskTag.trim()) {
       try {
-        localStorage.setItem('trace-current-focus-tags', JSON.stringify({
-          project: projectTag.trim(),
-          client: clientTag.trim(),
-          task: taskTag.trim(),
-        }))
-      } catch { /* noop */ }
+        localStorage.setItem(
+          'trace-current-focus-tags',
+          JSON.stringify({
+            project: projectTag.trim(),
+            client: clientTag.trim(),
+            task: taskTag.trim(),
+          })
+        );
+      } catch {
+        /* noop */
+      }
     }
-    onClose()
-  }, [goal, projectTag, clientTag, taskTag, onClose])
+    onClose();
+  }, [goal, projectTag, clientTag, taskTag, onClose]);
 
   return (
     <Modal isOpen={isOpen} onClose={handleDismiss} size="md">
@@ -73,16 +84,10 @@ export default function FocusStartedModal({ isOpen, onClose, onViewSession }: Fo
 
         {/* Title */}
         <div>
-          <h2
-            className="text-xl font-bold"
-            style={{ color: 'var(--color-text-primary)' }}
-          >
+          <h2 className="text-xl font-bold" style={{ color: 'var(--color-text-primary)' }}>
             {t('popups.focusStarted')}
           </h2>
-          <p
-            className="text-sm mt-1"
-            style={{ color: 'var(--color-text-secondary)' }}
-          >
+          <p className="text-sm mt-1" style={{ color: 'var(--color-text-secondary)' }}>
             {t('popups.focusStartedHint')}
           </p>
         </div>
@@ -101,12 +106,12 @@ export default function FocusStartedModal({ isOpen, onClose, onViewSession }: Fo
               color: 'var(--color-text-primary)',
             }}
             onFocus={(e) => {
-              e.currentTarget.style.borderColor = 'var(--color-accent)'
-              e.currentTarget.style.boxShadow = '0 0 0 3px var(--color-accent-soft)'
+              e.currentTarget.style.borderColor = 'var(--color-accent)';
+              e.currentTarget.style.boxShadow = '0 0 0 3px var(--color-accent-soft)';
             }}
             onBlur={(e) => {
-              e.currentTarget.style.borderColor = 'var(--color-border-subtle)'
-              e.currentTarget.style.boxShadow = 'none'
+              e.currentTarget.style.borderColor = 'var(--color-border-subtle)';
+              e.currentTarget.style.boxShadow = 'none';
             }}
           />
         </div>
@@ -158,15 +163,19 @@ export default function FocusStartedModal({ isOpen, onClose, onViewSession }: Fo
             onClick={handleDismiss}
             className="px-5 py-2 rounded-full text-sm font-medium transition-colors duration-150"
             style={{ color: 'var(--color-text-secondary)' }}
-            onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--color-text-primary)' }}
-            onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--color-text-secondary)' }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = 'var(--color-text-primary)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = 'var(--color-text-secondary)';
+            }}
           >
             {t('popups.dismiss')}
           </button>
         </div>
       </div>
     </Modal>
-  )
+  );
 }
 
 /* ── Tag input with dropdown suggestions ── */
@@ -180,13 +189,13 @@ function TagInput({
   onFocus,
   onBlur,
 }: {
-  value: string
-  onChange: (v: string) => void
-  placeholder: string
-  suggestions: string[]
-  showSuggestions: boolean
-  onFocus: () => void
-  onBlur: () => void
+  value: string;
+  onChange: (v: string) => void;
+  placeholder: string;
+  suggestions: string[];
+  showSuggestions: boolean;
+  onFocus: () => void;
+  onBlur: () => void;
 }) {
   return (
     <div className="relative">
@@ -207,8 +216,14 @@ function TagInput({
           style={{ color: 'var(--color-text-primary)' }}
         />
         <svg
-          width="16" height="16" viewBox="0 0 24 24" fill="none"
-          stroke="var(--color-text-muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="var(--color-text-muted)"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
           className="mr-3 shrink-0"
         >
           <polyline points="6 9 12 15 18 9" />
@@ -240,5 +255,5 @@ function TagInput({
         </div>
       )}
     </div>
-  )
+  );
 }

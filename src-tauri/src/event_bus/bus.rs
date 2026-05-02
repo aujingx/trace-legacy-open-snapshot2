@@ -114,7 +114,7 @@ impl EventBus {
         let mut typed_subs = self.typed_subscribers.lock().unwrap_or_else(|e| e.into_inner());
         typed_subs
             .entry(event_name)
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(Arc::new(callback));
         subscriber_id
     }

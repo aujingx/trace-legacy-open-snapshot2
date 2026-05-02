@@ -1301,7 +1301,7 @@ async fn ai_reschedule_tasks(
     if api_key.is_empty() {
         // 没有API密钥，直接按当前优先级返回
         let mut sorted = tasks.clone();
-        sorted.sort_by(|a, b| a.priority.cmp(&b.priority));
+        sorted.sort_by_key(|a| a.priority);
         return Ok(sorted);
     }
 
@@ -1352,13 +1352,13 @@ async fn ai_reschedule_tasks(
                         }
                     }
                     let mut sorted = tasks.clone();
-                    sorted.sort_by(|a, b| a.priority.cmp(&b.priority));
+                    sorted.sort_by_key(|a| a.priority);
                     Ok(sorted)
                 }
                 Err(_) => {
                     // JSON解析失败，返回原排序
                     let mut sorted = tasks.clone();
-                    sorted.sort_by(|a, b| a.priority.cmp(&b.priority));
+                    sorted.sort_by_key(|a| a.priority);
                     Ok(sorted)
                 }
             }
@@ -1366,7 +1366,7 @@ async fn ai_reschedule_tasks(
         Err(_) => {
             // 后端连接失败，返回原排序
             let mut sorted = tasks.clone();
-            sorted.sort_by(|a, b| a.priority.cmp(&b.priority));
+            sorted.sort_by_key(|a| a.priority);
             Ok(sorted)
         }
     }
@@ -2229,7 +2229,7 @@ fn main() {
 
             // 🔍 权限自检 - 检查辅助功能权限并通知前端
             let (has_permission, perm_title, perm_message) = check_permissions();
-            let is_first_run = state.is_tracking.lock().unwrap_or_else(|e| e.into_inner()).clone() == false
+            let is_first_run = !*state.is_tracking.lock().unwrap_or_else(|e| e.into_inner())
                 && state.activities.lock().unwrap_or_else(|e| e.into_inner()).is_empty();
 
             // 发送权限状态给前端

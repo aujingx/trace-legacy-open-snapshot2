@@ -44,6 +44,7 @@
   --color-blue: #79BEEB;
   --color-blue-light: #9DD4F0;
   --color-blue-soft: rgba(121, 190, 235, 0.12);
+  --color-blue-shadow: rgba(121, 190, 235, 0.35);
   --color-blue-hover: #5AACDF;
   --color-blue-gradient: linear-gradient(135deg, #79BEEB 0%, #5AACDF 100%);
 
@@ -51,6 +52,7 @@
   --color-purple: #D4C4FB;
   --color-purple-light: #E5D9FC;
   --color-purple-soft: rgba(212, 196, 251, 0.12);
+  --color-purple-shadow: rgba(212, 196, 251, 0.35);
   --color-purple-hover: #B8A3F5;
   --color-purple-gradient: linear-gradient(135deg, #D4C4FB 0%, #B8A3F5 100%);
 
@@ -58,6 +60,7 @@
   --color-green: #A8E6CF;
   --color-green-light: #C1EEDB;
   --color-green-soft: rgba(168, 230, 207, 0.12);
+  --color-green-shadow: rgba(168, 230, 207, 0.35);
   --color-green-hover: #7DD4B0;
   --color-green-gradient: linear-gradient(135deg, #A8E6CF 0%, #7DD4B0 100%);
 
@@ -65,6 +68,8 @@
   --color-lemon: #FFD3B6;
   --color-lemon-light: #FFE0CC;
   --color-lemon-soft: rgba(255, 211, 182, 0.12);
+  --color-lemon-shadow: rgba(255, 211, 182, 0.35);
+  --color-lemon-shadow: rgba(255, 211, 182, 0.35);
   --color-lemon-hover: #FFBB8E;
   --color-lemon-gradient: linear-gradient(135deg, #FFD3B6 0%, #FFBB8E 100%);
 

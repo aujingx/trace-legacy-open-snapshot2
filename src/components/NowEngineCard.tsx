@@ -15,16 +15,33 @@ const generateFirstStep = (taskName: string) => {
   return steps[Math.floor(Math.random() * steps.length)]
 }
 
-const getMetaTags = (task: Task) => {
+const getMetaTags = (task: Task, actualMinutes: number) => {
   const tags: { icon: React.ReactNode; label: string }[] = []
 
+  // 先显示已投入时间
+  if (actualMinutes > 0) {
+    const hours = Math.floor(actualMinutes / 60)
+    const mins = actualMinutes % 60
+    tags.push({
+      icon: <Clock size={12} />,
+      label: hours > 0 ? `已投入 ${hours}h ${mins}m` : `已投入 ${mins}m`,
+    })
+  }
+
+  // 再显示预计时间
   if (task.estimatedMinutes) {
     const hours = Math.floor(task.estimatedMinutes / 60)
     const mins = task.estimatedMinutes % 60
-    tags.push({
-      icon: <Clock size={12} />,
-      label: hours > 0 ? `预计 ${hours}h ${mins}m` : `预计 ${mins}m`,
-    })
+    const estLabel = hours > 0 ? `预计 ${hours}h ${mins}m` : `预计 ${mins}m`
+    // 如果已经有已投入时间，就把预计时间加到同一个标签里
+    if (tags.length > 0 && actualMinutes > 0) {
+      tags[0].label += ` / ${estLabel}`
+    } else {
+      tags.push({
+        icon: <Clock size={12} />,
+        label: estLabel,
+      })
+    }
   }
 
   if (task.dueDate) {
@@ -46,11 +63,23 @@ const getMetaTags = (task: Task) => {
 
 export default function NowEngineCard() {
   const getRecommendedTasks = useAppStore((s) => s.getRecommendedTasks)
+  const activities = useAppStore((s) => s.activities)
   const [launchBoostOpen, setLaunchBoostOpen] = useState(false)
   const [currentTaskIndex, setCurrentTaskIndex] = useState(0)
 
   // 🎯 使用统一的 Focus Logic Hook
   const { isWorking: isFocusing, currentFocusTask, startFocus, pauseFocus } = useFocusLogic()
+
+  // 计算每个任务的实际投入时间
+  const taskActualTimeMap = useMemo(() => {
+    const map: Record<string, number> = {}
+    activities.forEach((a: any) => {
+      if (a.taskId) {
+        map[a.taskId] = (map[a.taskId] || 0) + (a.duration || 0)
+      }
+    })
+    return map
+  }, [activities])
 
   const recommendedTasks = useMemo(() => getRecommendedTasks(5), [getRecommendedTasks])
   const recommendedTask = recommendedTasks[currentTaskIndex] || null
@@ -110,7 +139,7 @@ export default function NowEngineCard() {
   }
 
   const displayTask = currentFocusTask || recommendedTask
-  const metaTags = displayTask ? getMetaTags(displayTask) : []
+  const metaTags = displayTask ? getMetaTags(displayTask, taskActualTimeMap[displayTask.id] || 0) : []
 
   return (
     <>
@@ -121,8 +150,8 @@ export default function NowEngineCard() {
           border: isFocusing ? '2px solid var(--color-green)' : '2px solid var(--color-blue)',
           borderRadius: '24px',
           boxShadow: isFocusing
-            ? '4px 4px 0px rgba(168,230,207,0.4)'
-            : '4px 4px 0px rgba(121,190,235,0.4)',
+            ? '4px 4px 0px var(--color-green-shadow)'
+            : '4px 4px 0px var(--color-blue-shadow)',
         }}
       >
         {/* NOW Label */}

@@ -36,6 +36,7 @@ export default function Dashboard() {
   const loadActivities = useAppStore((s) => s.loadActivities)
   const tasks = useAppStore((s) => s.tasks)
   const loadTasks = useAppStore((s) => s.loadTasks)
+  const categories = useAppStore((s) => s.categories)
   const dailyGoalMinutes = useAppStore((s) => s.dailyGoalMinutes)
   const guardianSettings = useAppStore((s) => s.guardianSettings)
   const focusState = useAppStore((s) => s.focusState)
@@ -48,6 +49,29 @@ export default function Dashboard() {
   const todayActivities = activities.filter((a) => a.startTime.slice(0, 10) === today)
   const todayMinutes = Math.round(todayActivities.reduce((sum, a) => sum + (a.duration || 0), 0))
   const goalProgress = dailyGoalMinutes > 0 ? Math.min(100, Math.round((todayMinutes / dailyGoalMinutes) * 100)) : 0
+
+  // 计算今日各分类时间分布
+  const categoryTimeMap = todayActivities.reduce((acc, a) => {
+    const catName = a.category || '其他'
+    acc[catName] = (acc[catName] || 0) + (a.duration || 0)
+    return acc
+  }, {} as Record<string, number>)
+
+  const categoryTimeList = Object.entries(categoryTimeMap)
+    .map(([catName, mins]) => {
+      const category = categories.find((c: any) => c.name === catName)
+      return {
+        category: category || {
+          id: 'uncategorized',
+          name: catName,
+          color: 'var(--color-border-strong)',
+        },
+        minutes: Math.round(mins),
+        percentage: todayMinutes > 0 ? Math.round((mins / todayMinutes) * 100) : 0,
+      }
+    })
+    .sort((a, b) => b.minutes - a.minutes)
+    .slice(0, 5)
 
   const isFocusing = focusState === 'working'
   const completedTasks = tasks.filter((t) => t.status === 'completed').length
@@ -102,7 +126,7 @@ export default function Dashboard() {
       <div className="min-h-screen px-8 py-8" style={{ background: 'var(--color-bg-base)' }}>
         {/* 🎯 Page Header - 用日期 + 打招呼，去掉 Dashboard */}
         <div className="mb-8">
-          <h1 className="text-2xl font-bold mb-1" style={{ color: 'var(--color-text-primary)', fontFamily: 'Quicksand, sans-serif' }}>
+          <h1 className="text-3xl font-bold mb-1" style={{ color: 'var(--color-text-primary)', fontFamily: 'Quicksand, sans-serif' }}>
             {getGreeting()}
           </h1>
           <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
@@ -122,40 +146,49 @@ export default function Dashboard() {
               style={{
                 background: 'var(--color-bg-surface-1)',
                 border: '2px solid var(--color-blue)',
-                boxShadow: '4px 4px 0px var(--color-blue-soft)',
+                boxShadow: '4px 4px 0px var(--color-blue-shadow)',
               }}
             >
-              <div className="flex items-center gap-2.5 mb-3">
-                <div
-                  className="w-10 h-10 rounded-xl flex items-center justify-center"
-                  style={{ background: isFocusing ? 'var(--color-green-soft)' : 'var(--color-blue-soft)' }}
-                >
-                  <Sparkles size={20} style={{ color: isFocusing ? 'var(--color-green)' : 'var(--color-blue)' }} />
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="flex items-center gap-2.5 mb-3">
+                    <div
+                      className="w-10 h-10 rounded-xl flex items-center justify-center"
+                      style={{ background: isFocusing ? 'var(--color-green-soft)' : 'var(--color-blue-soft)' }}
+                    >
+                      <Sparkles size={20} style={{ color: isFocusing ? 'var(--color-green)' : 'var(--color-blue)' }} />
+                    </div>
+                    <span className="text-sm font-medium" style={{ color: 'var(--color-text-secondary)' }}>
+                      今日专注
+                    </span>
+                  </div>
+                  <div className="text-3xl font-bold mb-1" style={{ color: 'var(--color-text-primary)', fontFamily: 'Quicksand, sans-serif' }}>
+                    {Math.floor(todayMinutes / 60)}h {todayMinutes % 60}m
+                  </div>
+                  {isFocusing ? (
+                    <div className="text-xs font-medium" style={{ color: 'var(--color-green)' }}>
+                      🔥 正在专注中...
+                    </div>
+                  ) : (
+                    <div className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+                      目标 {dailyGoalMinutes} 分钟
+                    </div>
+                  )}
                 </div>
-                <span className="text-sm font-medium" style={{ color: 'var(--color-text-secondary)' }}>
-                  今日专注
-                </span>
-              </div>
-              <div className="text-2xl font-bold mb-2" style={{ color: 'var(--color-text-primary)', fontFamily: 'Quicksand, sans-serif' }}>
-                {Math.floor(todayMinutes / 60)}h {todayMinutes % 60}m
-              </div>
-              {/* 进度条 */}
-              <div className="w-full h-1.5 rounded-full" style={{ background: 'var(--color-border-light)' }}>
-                <div
-                  className="h-full rounded-full transition-all duration-500"
-                  style={{
-                    width: `${Math.min(100, goalProgress)}%`,
-                    background: isFocusing
-                      ? 'linear-gradient(90deg, var(--color-green) 0%, var(--color-blue) 100%)'
-                      : 'var(--color-accent-gradient)',
-                  }}
-                />
-              </div>
-              {isFocusing && (
-                <div className="mt-2.5 text-xs font-medium" style={{ color: 'var(--color-green)' }}>
-                  🔥 正在专注中...
+                {/* 垂直进度条装饰 */}
+                <div className="relative w-3 h-14 flex-shrink-0">
+                  <div className="w-full h-full rounded-full" style={{ background: 'var(--color-border-light)' }} />
+                  <div
+                    className="absolute bottom-0 w-full rounded-full transition-all duration-500"
+                    style={{
+                      height: `${Math.min(100, goalProgress)}%`,
+                      background: isFocusing
+                        ? 'linear-gradient(0deg, var(--color-green) 0%, var(--color-blue) 100%)'
+                        : 'var(--color-blue-gradient)',
+                    }}
+                  />
                 </div>
-              )}
+              </div>
             </div>
 
             {/* 目标进度卡片 */}
@@ -164,7 +197,7 @@ export default function Dashboard() {
               style={{
                 background: 'var(--color-bg-surface-1)',
                 border: '2px solid var(--color-lemon)',
-                boxShadow: '4px 4px 0px var(--color-lemon-soft)',
+                boxShadow: '4px 4px 0px var(--color-lemon-shadow)',
               }}
             >
               <div className="flex items-center justify-between">
@@ -180,7 +213,7 @@ export default function Dashboard() {
                       目标进度
                     </span>
                   </div>
-                  <div className="text-2xl font-bold mb-1" style={{ color: 'var(--color-text-primary)', fontFamily: 'Quicksand, sans-serif' }}>
+                  <div className="text-3xl font-bold mb-1" style={{ color: 'var(--color-text-primary)', fontFamily: 'Quicksand, sans-serif' }}>
                     {goalProgress}%
                   </div>
                   <div className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
@@ -228,7 +261,7 @@ export default function Dashboard() {
               style={{
                 background: 'var(--color-bg-surface-1)',
                 border: '2px solid var(--color-purple)',
-                boxShadow: '4px 4px 0px var(--color-purple-soft)',
+                boxShadow: '4px 4px 0px var(--color-purple-shadow)',
               }}
             >
               <div className="flex items-center justify-between">
@@ -244,7 +277,7 @@ export default function Dashboard() {
                       任务完成
                     </span>
                   </div>
-                  <div className="text-2xl font-bold mb-1" style={{ color: 'var(--color-text-primary)', fontFamily: 'Quicksand, sans-serif' }}>
+                  <div className="text-3xl font-bold mb-1" style={{ color: 'var(--color-text-primary)', fontFamily: 'Quicksand, sans-serif' }}>
                     {completedTasks} / {tasks.length}
                   </div>
                   <div className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
@@ -301,8 +334,150 @@ export default function Dashboard() {
           </div>
         )}
 
+        {/* 🕒 今日时间轴 - 可视化一天的时间块 */}
+        <div
+          className="mb-5 p-5 rounded-2xl transition-all duration-200"
+          style={{
+            background: 'var(--color-bg-surface-1)',
+            border: '2px solid var(--color-border-strong)',
+            boxShadow: '4px 4px 0px var(--color-border-strong)',
+          }}
+        >
+          <h3 className="text-sm font-semibold mb-4" style={{ color: 'var(--color-text-primary)' }}>
+            今日时间轴
+          </h3>
+          <div className="relative">
+            {/* 小时刻度 */}
+            <div className="flex justify-between mb-1">
+              {[0, 3, 6, 9, 12, 15, 18, 21].map((h) => (
+                <span
+                  key={h}
+                  className="text-xs"
+                  style={{ color: 'var(--color-text-muted)' }}
+                >
+                  {h}:00
+                </span>
+              ))}
+            </div>
+            {/* 时间轴背景 */}
+            <div
+              className="w-full h-8 rounded-lg overflow-hidden relative"
+              style={{ background: 'var(--color-border-light)' }}
+            >
+              {/* 当前时间指示线 */}
+              <div
+                className="absolute top-0 bottom-0 w-0.5 z-10"
+                style={{
+                  left: `${(new Date().getHours() + new Date().getMinutes() / 60) / 24 * 100}%`,
+                  background: 'var(--color-red)',
+                  boxShadow: '0 0 4px var(--color-red)',
+                }}
+              />
+              {/* 渲染活动时间块 - 简化版，显示今日各分类的总时间占比 */}
+              {(() => {
+                let left = 0
+                // 从 6:00 开始显示，对应 25% 位置
+                return categoryTimeList.map((item, index) => {
+                  const width = (item.minutes / (24 * 60)) * 100
+                  const result = (
+                    <div
+                      key={index}
+                      className="absolute h-full transition-all duration-500"
+                      style={{
+                        left: `${left + 25}%`,
+                        width: `${Math.min(width, 100 - left)}%`,
+                        background: item.category.color,
+                      }}
+                    />
+                  )
+                  left += width
+                  return result
+                })
+              })()}
+            </div>
+            {/* 时间轴图例 */}
+            <div className="flex flex-wrap gap-3 mt-3">
+              {categoryTimeList.slice(0, 4).map((item, index) => (
+                <div key={index} className="flex items-center gap-1.5">
+                  <div
+                    className="w-2.5 h-2.5 rounded-full"
+                    style={{ background: item.category.color }}
+                  />
+                  <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+                    {item.category.name}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
         {/* 🌟 NowEngine - 页面核心 */}
         <NowEngineCard />
+
+        {/* 📊 今日时间分布 */}
+        {categoryTimeList.length > 0 && (
+          <div
+            className="mt-4 p-5 rounded-2xl transition-all duration-200 hover:scale-[1.01]"
+            style={{
+              background: 'var(--color-bg-surface-1)',
+              border: '2px solid var(--color-border-strong)',
+              boxShadow: '4px 4px 0px var(--color-border-strong)',
+            }}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>
+                今日时间分布
+              </h3>
+              <button
+                onClick={() => navigate('/analytics')}
+                className="text-xs font-medium transition-all hover:opacity-80"
+                style={{ color: 'var(--color-blue)' }}
+              >
+                查看详情 →
+              </button>
+            </div>
+
+            {/* 进度条总览 */}
+            <div className="w-full h-3 rounded-full overflow-hidden flex mb-4" style={{ background: 'var(--color-border-light)' }}>
+              {categoryTimeList.map((item, index) => (
+                <div
+                  key={index}
+                  className="h-full transition-all duration-500"
+                  style={{
+                    width: `${item.percentage}%`,
+                    background: item.category.color,
+                  }}
+                />
+              ))}
+            </div>
+
+            {/* 分类列表 */}
+            <div className="space-y-2">
+              {categoryTimeList.map((item, index) => (
+                <div key={index} className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div
+                      className="w-3 h-3 rounded-full"
+                      style={{ background: item.category.color }}
+                    />
+                    <span className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+                      {item.category.name}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+                      {Math.floor(item.minutes / 60)}h {item.minutes % 60}m
+                    </span>
+                    <span className="text-xs font-medium" style={{ color: 'var(--color-text-primary)' }}>
+                      {item.percentage}%
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </>
   )

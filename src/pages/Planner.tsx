@@ -25,6 +25,7 @@ import { useAppStore } from '../store/useAppStore'
 import type { Task, Subtask, TaskStatus, RepeatType } from '../services/dataService'
 import useTheme from '../hooks/useTheme'
 import { PRIORITY_COLORS } from '../config/themes'
+import TaskPanel from '../components/TaskPanel'
 
 // --- Types & Constants ---
 
@@ -139,6 +140,18 @@ export default function Planner() {
   const updateTask = useAppStore((s) => s.updateTask)
   const deleteTask = useAppStore((s) => s.deleteTask)
   const reorderTasks = useAppStore((s) => s.reorderTasks)
+  const activities = useAppStore((s) => s.activities)
+
+  // 计算每个任务的实际投入时间
+  const taskActualTimeMap = useMemo(() => {
+    const map: Record<string, number> = {}
+    activities.forEach((a: any) => {
+      if (a.taskId) {
+        map[a.taskId] = (map[a.taskId] || 0) + (a.duration || 0)
+      }
+    })
+    return map
+  }, [activities])
 
   const habits = useAppStore((s) => s.habits)
   const loadHabits = useAppStore((s) => s.loadHabits)
@@ -152,6 +165,29 @@ export default function Planner() {
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
 
+  // 快速创建相关 state
+  const [quickAddTitle, setQuickAddTitle] = useState('')
+
+  // 信息密度视图模式
+  type DensityMode = 'single' | 'today' | 'all'
+  const [densityMode, setDensityMode] = useState<DensityMode>('today')
+
+  // 未来任务折叠状态
+  const [showFutureTasks, setShowFutureTasks] = useState(false)
+
+  // 共情弹窗状态
+  const [showEmpathyModal, setShowEmpathyModal] = useState(false)
+  const [empathyTaskId, setEmpathyTaskId] = useState<string | null>(null)
+
+  // 庆祝动画状态
+  const [showCelebration, setShowCelebration] = useState(false)
+  const [celebrationTaskTitle, setCelebrationTaskTitle] = useState('')
+
+  // 统一任务面板
+  const [taskPanelOpen, setTaskPanelOpen] = useState(false)
+  const [taskPanelMode, setTaskPanelMode] = useState<'create' | 'view' | 'edit'>('create')
+  const [taskPanelTask, setTaskPanelTask] = useState<Task | null>(null)
+
   // Calendar state
   const now = new Date()
   const [calYear, setCalYear] = useState(now.getFullYear())
@@ -160,8 +196,29 @@ export default function Planner() {
 
   useEffect(() => { loadTasks(); loadHabits() }, [loadTasks, loadHabits])
 
-  // --- filtered tasks ---
-  const filtered = tasks.filter((t) => {
+  // --- 密度模式任务过滤 ---
+  const densityFilteredTasks = useMemo(() => {
+    const today = todayStr()
+
+    if (densityMode === 'today') {
+      // 只显示今天的任务，排除已归档
+      return tasks.filter((t) => t.dueDate === today && t.status !== 'archived')
+    }
+
+    if (densityMode === 'single') {
+      // 单任务模式：返回 AI 推荐的最高优先级任务
+      // 优先选择进行中 > 高优先级 > 今天截止
+      const pending = tasks.filter((t) => t.status !== 'completed' && t.status !== 'archived')
+      if (pending.length === 0) return []
+      return [pending.sort((a, b) => b.priority - a.priority)[0]]
+    }
+
+    // All 模式：显示所有任务（排除已归档）
+    return tasks.filter((t) => t.status !== 'archived')
+  }, [tasks, densityMode])
+
+  // --- filtered tasks (for status filtering) ---
+  const filtered = densityFilteredTasks.filter((t) => {
     if (filter === 'all') return true
     return t.status === filter
   })
@@ -236,25 +293,15 @@ export default function Planner() {
 
   // --- Modal handlers ---
   const openAdd = useCallback((presetDate?: string) => {
-    setEditingId(null)
-    setForm({ ...EMPTY_FORM, dueDate: presetDate || todayStr() })
-    setNewSubtaskTitle('')
-    setModalOpen(true)
+    setTaskPanelTask(null)
+    setTaskPanelMode('create')
+    setTaskPanelOpen(true)
   }, [])
 
   const openEdit = useCallback((task: Task) => {
-    setEditingId(task.id)
-    setForm({
-      title: task.title,
-      priority: task.priority,
-      project: task.project,
-      estimatedMinutes: task.estimatedMinutes,
-      dueDate: task.dueDate,
-      repeatType: task.repeatType,
-      subtasks: task.subtasks.map((s) => ({ ...s })),
-    })
-    setNewSubtaskTitle('')
-    setModalOpen(true)
+    setTaskPanelTask(task)
+    setTaskPanelMode('view')
+    setTaskPanelOpen(true)
   }, [])
 
   const handleSave = useCallback(() => {
@@ -291,12 +338,136 @@ export default function Planner() {
     const order: TaskStatus[] = ['todo', 'in_progress', 'completed']
     const idx = order.indexOf(task.status)
     if (idx >= 0) {
-      updateTask(task.id, { status: order[(idx + 1) % 3] })
+      const newStatus = order[(idx + 1) % 3]
+      updateTask(task.id, { status: newStatus })
+      // 触发庆祝动画
+      if (newStatus === 'completed') {
+        setCelebrationTaskTitle(task.title)
+        setShowCelebration(true)
+        setTimeout(() => setShowCelebration(false), 3000)
+      }
     } else {
       // For paused or archived, cycle to todo
       updateTask(task.id, { status: 'todo' })
     }
   }, [updateTask])
+
+  // 快速创建任务处理函数
+  // 自然语言日期解析函数
+  const parseDateFromText = (text: string): string => {
+    const today = todayStr()
+    const now = new Date()
+
+    // 今天
+    if (/今天/.test(text)) {
+      return today
+    }
+
+    // 明天
+    if (/明天/.test(text)) {
+      const tomorrow = new Date(now)
+      tomorrow.setDate(tomorrow.getDate() + 1)
+      return dateStr(tomorrow.getFullYear(), tomorrow.getMonth() + 1, tomorrow.getDate())
+    }
+
+    // 后天
+    if (/后天/.test(text)) {
+      const d = new Date(now)
+      d.setDate(d.getDate() + 2)
+      return dateStr(d.getFullYear(), d.getMonth() + 1, d.getDate())
+    }
+
+    // 下周X
+    const weekDayMatch = text.match(/下周([一二三四五六日])/)
+    if (weekDayMatch) {
+      const weekDays: Record<string, number> = { '一': 1, '二': 2, '三': 3, '四': 4, '五': 5, '六': 6, '日': 0 }
+      const targetDay = weekDays[weekDayMatch[1]]
+      const currentDay = now.getDay()
+      const daysToAdd = (7 - currentDay + targetDay) % 7 || 7
+      const d = new Date(now)
+      d.setDate(d.getDate() + daysToAdd)
+      return dateStr(d.getFullYear(), d.getMonth() + 1, d.getDate())
+    }
+
+    // 具体日期：5-2 / 2026-05-02
+    const dateMatch = text.match(/(\d{1,4})[-年](\d{1,2})[-月](\d{1,2})日?|(\d{1,2})[-月](\d{1,2})日?/)
+    if (dateMatch) {
+      if (dateMatch[1] && dateMatch[2] && dateMatch[3]) {
+        // YYYY-MM-DD or YY-MM-DD or YYYY年M月D日
+        let year = parseInt(dateMatch[1])
+        if (year < 100) year += 2000
+        return dateStr(year, parseInt(dateMatch[2]), parseInt(dateMatch[3]))
+      } else if (dateMatch[4] && dateMatch[5]) {
+        // MM-DD or M月D日
+        return dateStr(now.getFullYear(), parseInt(dateMatch[4]), parseInt(dateMatch[5]))
+      }
+    }
+
+    return today
+  }
+
+  const handleQuickCreate = useCallback(() => {
+    if (!quickAddTitle.trim()) return
+
+    const title = quickAddTitle.trim()
+    let priority = 3
+    let estimatedMinutes = 60
+    let dueDate = todayStr()
+    let firstStep = ''
+
+    // 完整的自然语言解析
+    // 1. 提取优先级 P1-P5
+    const priorityMatch = title.match(/P([0-5])/i)
+    if (priorityMatch) {
+      priority = parseInt(priorityMatch[1])
+    }
+
+    // 2. 提取时间（分钟）：30分钟 / 45m / 1h / 1.5小时
+    const timeMatch = title.match(/(\d+(?:\.\d+)?)\s*(分钟|m|小时|h)/i)
+    if (timeMatch) {
+      const num = parseFloat(timeMatch[1])
+      const unit = timeMatch[2].toLowerCase()
+      estimatedMinutes = Math.round((unit === 'h' || unit === '小时' ? num * 60 : num))
+    }
+
+    // 3. 提取日期
+    dueDate = parseDateFromText(title)
+
+    // 4. 提取第一步：第一步 xxx / 先 xxx
+    const firstStepMatch = title.match(/(?:第一步[:：]?|先)\s*(.+)/i)
+    if (firstStepMatch) {
+      firstStep = firstStepMatch[1].trim()
+    }
+
+    // 清理标题中的所有解析标记
+    let cleanTitle = title
+      .replace(/P[0-5]/i, '')
+      .replace(/(\d+(?:\.\d+)?)\s*(分钟|m|小时|h)/i, '')
+      .replace(/今天|明天|后天|下周[一二三四五六日]/g, '')
+      .replace(/(\d{1,4})[-年](\d{1,2})[-月](\d{1,2})日?|(\d{1,2})[-月](\d{1,2})日?/g, '')
+      .replace(/(?:第一步[:：]?|先)\s*.+/i, '')
+      .trim()
+
+    // 创建任务
+    addTask({
+      title: cleanTitle,
+      priority: priority as 1 | 2 | 3 | 4 | 5,
+      status: 'todo',
+      estimatedMinutes,
+      dueDate,
+      firstStep,
+      subtasks: firstStep ? [{ id: crypto.randomUUID(), title: firstStep, completed: false }] : [],
+      createdAt: new Date().toISOString(),
+      timeLoggedMinutes: 0,
+      actualMinutes: 0,
+      project: '',
+      repeatType: 'none',
+      emotionalTag: undefined,
+    })
+
+    // 重置输入但保持输入框打开（方便连续创建）
+    setQuickAddTitle('')
+  }, [quickAddTitle, addTask, todayStr])
 
   const handleDelete = useCallback((id: string) => {
     deleteTask(id)
@@ -444,55 +615,200 @@ export default function Planner() {
   }
 
   // ============================================================
+  // 今日进度统计
+  const todayTasks = filtered.filter((t) => t.dueDate === todayStr())
+  const todayCompleted = todayTasks.filter((t) => t.status === 'completed').length
+  const todayProgress = todayTasks.length > 0 ? Math.round((todayCompleted / todayTasks.length) * 100) : 0
 
   return (
     <div className="p-6 md:p-8 max-w-5xl mx-auto">
-      {/* ── Header ── */}
-      <div className="flex items-center justify-between mb-2">
+      {/* ── Header - Macaron 设计风格 ── */}
+      <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-3xl font-extrabold text-[var(--color-text-primary)] tracking-tight" style={{ letterSpacing: '-0.02em' }}>
-            {t('planner.title')}
+          <h1 className="text-3xl font-bold mb-1" style={{ color: 'var(--color-text-primary)', fontFamily: 'Quicksand, sans-serif' }}>
+            Tasks
           </h1>
-          <div className="mt-1.5 h-1 rounded-full" style={{ width: 48, background: 'linear-gradient(90deg, var(--color-accent), var(--color-accent-soft))' }} />
+          <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
+            {tasks.length} 个任务
+          </p>
         </div>
-        <button
-          onClick={() => openAdd()}
-          className="cursor-pointer inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white transition-all duration-200"
-          style={{ background: 'linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent) 100%)', borderRadius: 'var(--radius-md)', boxShadow: '0 4px 14px rgba(44, 24, 16, 0.15)' }}
-          onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(44, 24, 16, 0.22)' }}
-          onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 14px rgba(44, 24, 16, 0.15)' }}
-        >
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M8 3v10M3 8h10" /></svg>
-          {t('planner.addTask')}
-        </button>
-      </div>
-      <p className="text-sm text-[var(--color-text-muted)] mb-5">{todayDisplay()}</p>
-
-      {/* ── View Mode Switcher ── */}
-      <div className="flex items-center gap-2 mb-5">
-        {(Object.keys(VIEW_LABELS) as ViewMode[]).map((mode) => (
-          <button
-            key={mode}
-            onClick={() => setViewMode(mode)}
-            className="cursor-pointer inline-flex items-center gap-1.5 transition-all duration-200"
+        <div className="flex items-center gap-3">
+          {/* 视图切换下拉 */}
+          <div
+            className="px-4 py-2.5 rounded-2xl flex items-center gap-2 cursor-pointer transition-all"
             style={{
-              padding: '7px 14px',
-              borderRadius: 'var(--radius-md)',
-              fontSize: 13,
-              fontWeight: 600,
-              background: viewMode === mode ? 'var(--color-accent)' : 'var(--color-bg-surface-2)',
-              color: viewMode === mode ? '#fff' : 'var(--color-text-secondary)',
-              boxShadow: viewMode === mode ? '0 2px 8px rgba(44, 24, 16, 0.15)' : 'inset 0 0 0 1px var(--color-border-subtle)',
-              transform: viewMode === mode ? 'scale(1.03)' : 'scale(1)',
+              background: 'var(--color-bg-surface-1)',
+              border: '2px solid var(--color-border-strong)',
+              boxShadow: '3px 3px 0px var(--color-border-strong)',
             }}
           >
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d={VIEW_ICONS[mode]} />
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="var(--color-text-secondary)" strokeWidth="2">
+              <path d="M2 4h12M2 8h12M2 12h12" />
             </svg>
-            {t(VIEW_LABELS[mode])}
+            <span className="text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>列表</span>
+            <span style={{ color: 'var(--color-text-muted)' }}>▼</span>
+          </div>
+          {/* 添加任务按钮 */}
+          <button
+            onClick={() => {
+              setTaskPanelTask(null)
+              setTaskPanelMode('create')
+              setTaskPanelOpen(true)
+            }}
+            className="px-5 py-2.5 rounded-2xl font-semibold text-white flex items-center gap-2 transition-all duration-200"
+            style={{
+              background: 'linear-gradient(135deg, var(--color-blue) 0%, var(--color-purple) 100%)',
+              border: '2px solid var(--color-blue)',
+              boxShadow: '3px 3px 0px rgba(59, 130, 246, 0.3)',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-2px)'
+              e.currentTarget.style.boxShadow = '4px 4px 0px rgba(59, 130, 246, 0.4)'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)'
+              e.currentTarget.style.boxShadow = '3px 3px 0px rgba(59, 130, 246, 0.3)'
+            }}
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M8 3v10M3 8h10" />
+            </svg>
+            添加任务
           </button>
-        ))}
+        </div>
       </div>
+
+      {/* ── 状态筛选标签 - Macaron 风格 ── */}
+      {densityMode !== 'single' && (
+        <div className="flex gap-3 mb-6 flex-wrap">
+          {[
+            { key: 'all', label: '全部', color: 'var(--color-blue)' },
+            { key: 'in_progress', label: '进行中', color: 'var(--color-lemon)' },
+            { key: 'todo', label: '待办', color: 'var(--color-purple)' },
+            { key: 'paused', label: '已暂停', color: 'var(--color-orange)' },
+            { key: 'completed', label: '已完成', color: 'var(--color-green)' },
+            { key: 'archived', label: '已归档', color: 'var(--color-text-muted)' },
+          ].map(({ key, label, color }) => (
+            <button
+              key={key}
+              onClick={() => setFilter(key as any)}
+              className="px-5 py-2.5 rounded-2xl font-semibold transition-all duration-200"
+              style={{
+                background: filter === key ? color : 'var(--color-bg-surface-1)',
+                color: filter === key ? '#fff' : 'var(--color-text-secondary)',
+                border: filter === key ? `2px solid ${color}` : '2px solid var(--color-border-strong)',
+                boxShadow: filter === key ? `3px 3px 0px ${color}40` : '3px 3px 0px var(--color-border-strong)',
+                transform: filter === key ? 'translateY(-2px)' : 'translateY(0)',
+              }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* ── 信息密度切换器 - Single Task / Today / All ── */}
+      <div className="flex items-center justify-center mb-5">
+        <div
+          className="inline-flex items-center gap-1 p-1 rounded-xl"
+          style={{ background: 'var(--color-bg-surface-2)', border: '1px solid var(--color-border-light)' }}
+        >
+          <button
+            onClick={() => setDensityMode('single')}
+            className="cursor-pointer inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold transition-all duration-200"
+            style={{
+              borderRadius: 'var(--radius-md)',
+              background: densityMode === 'single' ? 'var(--color-purple)' : 'transparent',
+              color: densityMode === 'single' ? '#fff' : 'var(--color-text-secondary)',
+              boxShadow: densityMode === 'single' ? '0 2px 8px rgba(147, 51, 234, 0.2)' : 'none',
+            }}
+          >
+            <span>🎯</span>
+            <span>Single Task</span>
+          </button>
+          <button
+            onClick={() => setDensityMode('today')}
+            className="cursor-pointer inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold transition-all duration-200"
+            style={{
+              borderRadius: 'var(--radius-md)',
+              background: densityMode === 'today' ? 'var(--color-blue)' : 'transparent',
+              color: densityMode === 'today' ? '#fff' : 'var(--color-text-secondary)',
+              boxShadow: densityMode === 'today' ? '0 2px 8px rgba(59, 130, 246, 0.2)' : 'none',
+            }}
+          >
+            <span>📋</span>
+            <span>Today</span>
+          </button>
+          <button
+            onClick={() => setDensityMode('all')}
+            className="cursor-pointer inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold transition-all duration-200"
+            style={{
+              borderRadius: 'var(--radius-md)',
+              background: densityMode === 'all' ? 'var(--color-green)' : 'transparent',
+              color: densityMode === 'all' ? '#fff' : 'var(--color-text-secondary)',
+              boxShadow: densityMode === 'all' ? '0 2px 8px rgba(34, 197, 94, 0.2)' : 'none',
+            }}
+          >
+            <span>📂</span>
+            <span>All</span>
+          </button>
+        </div>
+      </div>
+
+      {/* ── 自然语言快速创建输入框（永久显示在顶部） ── */}
+      <div
+        className="mb-6 p-4 rounded-2xl transition-all duration-200 hover:shadow-md"
+        style={{
+          background: 'var(--color-bg-surface-1)',
+          border: '2px solid var(--color-border-strong)',
+          boxShadow: '4px 4px 0px var(--color-border-strong)',
+        }}
+      >
+        <div className="flex items-center gap-3">
+          <span className="text-xl">🔍</span>
+          <input
+            type="text"
+            placeholder="今天要做什么？按回车快速创建..."
+            className="flex-1 bg-transparent outline-none text-base font-medium"
+            style={{ color: 'var(--color-text-primary)' }}
+            value={quickAddTitle}
+            onChange={(e) => setQuickAddTitle(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleQuickCreate()}
+            autoFocus
+          />
+        </div>
+        <div className="mt-2 ml-9 text-xs" style={{ color: 'var(--color-text-muted)' }}>
+          💡 试试自然语言："明天下午3点 写报告 P1 45分钟 第一步先整理资料"
+        </div>
+      </div>
+
+      {/* ── View Mode Switcher (List/Board/Calendar/Timeline) ── */}
+      {densityMode !== 'single' && (
+        <div className="flex items-center gap-2 mb-5">
+          {(Object.keys(VIEW_LABELS) as ViewMode[]).map((mode) => (
+            <button
+              key={mode}
+              onClick={() => setViewMode(mode)}
+              className="cursor-pointer inline-flex items-center gap-1.5 transition-all duration-200"
+              style={{
+                padding: '7px 14px',
+                borderRadius: 'var(--radius-md)',
+                fontSize: 13,
+                fontWeight: 600,
+                background: viewMode === mode ? 'var(--color-accent)' : 'var(--color-bg-surface-2)',
+                color: viewMode === mode ? '#fff' : 'var(--color-text-secondary)',
+                boxShadow: viewMode === mode ? '0 2px 8px rgba(44, 24, 16, 0.15)' : 'inset 0 0 0 1px var(--color-border-subtle)',
+                transform: viewMode === mode ? 'scale(1.03)' : 'scale(1)',
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d={VIEW_ICONS[mode]} />
+              </svg>
+              {t(VIEW_LABELS[mode])}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* ── Filter Tabs (for list & board) ── */}
       {(viewMode === 'list' || viewMode === 'board') && (
@@ -516,8 +832,157 @@ export default function Planner() {
         </div>
       )}
 
+      {/* ── SINGLE TASK MODE ── */}
+      {densityMode === 'single' && (
+        <>
+          {filtered.length === 0 ? (
+            <div style={{ background: 'linear-gradient(135deg, var(--color-bg-surface-1) 0%, #fef8f0 100%)', borderRadius: 'var(--radius-xl)', border: '1px solid var(--color-border-subtle)', boxShadow: 'var(--shadow-card)', padding: '48px 24px', textAlign: 'center' as const }}>
+              <EmptyState icon="🎯" title="所有任务已完成" description="太棒了！创建新任务或休息一下吧"
+                action={<button onClick={() => openAdd()} className="cursor-pointer inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white" style={{ background: 'var(--color-accent)', borderRadius: 'var(--radius-md)' }}>创建新任务</button>} />
+            </div>
+          ) : (
+            <div>
+              {/* 核心单任务卡片 - 聚焦模式 */}
+              {filtered.map((task) => (
+                <div
+                  key={task.id}
+                  className="p-8 rounded-2xl transition-all duration-300"
+                  style={{
+                    background: 'var(--color-bg-surface-1)',
+                    border: '3px solid var(--color-purple)',
+                    boxShadow: '8px 8px 0px var(--color-purple-shadow)',
+                  }}
+                >
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="w-4 h-4 rounded-full"
+                        style={{ backgroundColor: PRIORITY_COLORS[task.priority] }}
+                      />
+                      {task.project && (
+                        <Badge variant="accent">{task.project}</Badge>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => openEdit(task)}
+                      className="text-sm"
+                      style={{ color: 'var(--color-text-muted)' }}
+                    >
+                      编辑 →
+                    </button>
+                  </div>
+
+                  <h2
+                    className="text-2xl font-bold mb-4"
+                    style={{ color: 'var(--color-text-primary)', fontFamily: 'Quicksand, sans-serif' }}
+                  >
+                    {task.title}
+                  </h2>
+
+                  {/* AI 推荐的第一步 */}
+                  {(task.firstStep || task.subtasks.length > 0) && (
+                    <div
+                      className="p-4 mb-6 rounded-xl"
+                      style={{
+                        background: 'var(--color-blue-soft)',
+                        border: '1px solid var(--color-blue)',
+                      }}
+                    >
+                      <p className="text-sm font-medium mb-2" style={{ color: 'var(--color-blue)' }}>
+                        💡 AI 推荐从这里开始
+                      </p>
+                      <p className="text-base" style={{ color: 'var(--color-text-primary)' }}>
+                        {task.firstStep || task.subtasks.find((s) => !s.completed)?.title || '开始任务的第一步'}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* 任务元数据 */}
+                  <div className="flex flex-wrap gap-4 mb-6 text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+                    <div className="flex items-center gap-1.5">
+                      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                        <path d="M8 3v5l3 3" />
+                        <circle cx="8" cy="8" r="7" />
+                      </svg>
+                      <span>预计 {fmtDuration(task.estimatedMinutes)}</span>
+                    </div>
+                    {task.dueDate && (
+                      <div className="flex items-center gap-1.5">
+                        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                          <rect x="2" y="3" width="12" height="11" rx="2" />
+                          <path d="M6 1v2M10 1v2" />
+                        </svg>
+                        <span>{task.dueDate}</span>
+                      </div>
+                    )}
+                    {task.subtasks.length > 0 && (
+                      <div className="flex items-center gap-1.5">
+                        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                          <path d="M2 8h12M2 12h12M2 4h12" />
+                        </svg>
+                        <span>{task.subtasks.filter((s) => s.completed).length}/{task.subtasks.length} 子任务</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 行动按钮 */}
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => cycleStatus(task)}
+                      className="flex-1 px-6 py-3 rounded-xl font-semibold text-white transition-all hover:scale-[1.02] flex items-center justify-center gap-2"
+                      style={{
+                        background: task.status === 'completed' ? 'var(--color-green)' : 'linear-gradient(135deg, var(--color-purple) 0%, var(--color-blue) 100%)',
+                        boxShadow: '4px 4px 0px var(--color-border-strong)',
+                      }}
+                    >
+                      {task.status === 'completed' ? (
+                        <>✓ 已完成</>
+                      ) : task.status === 'in_progress' ? (
+                        <>🔥 进行中 - 点击完成</>
+                      ) : (
+                        <>▶️ 开始任务</>
+                      )}
+                    </button>
+                  </div>
+
+                  {/* 「我不想做」按钮 */}
+                  <div className="mt-4 text-center">
+                    <button
+                      onClick={() => {
+                        setEmpathyTaskId(filtered[0]?.id || null)
+                        setShowEmpathyModal(true)
+                      }}
+                      className="text-sm transition-all hover:opacity-80"
+                      style={{ color: 'var(--color-text-muted)' }}
+                    >
+                      😔 我不想做这个...
+                    </button>
+                  </div>
+                </div>
+              ))}
+
+              {/* 其他待办任务预览 */}
+              {tasks.filter((t) => t.status !== 'completed' && t.status !== 'archived').length > 1 && (
+                <div className="mt-6 p-4 rounded-xl" style={{ background: 'var(--color-bg-surface-1)', border: '1px solid var(--color-border-light)' }}>
+                  <p className="text-sm font-medium mb-3" style={{ color: 'var(--color-text-secondary)' }}>
+                    📋 还有 {tasks.filter((t) => t.status !== 'completed' && t.status !== 'archived').length - 1} 个任务在等待
+                  </p>
+                  <button
+                    onClick={() => setDensityMode('today')}
+                    className="text-sm font-medium transition-all hover:opacity-80"
+                    style={{ color: 'var(--color-blue)' }}
+                  >
+                    查看全部 →
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </>
+      )}
+
       {/* ── LIST VIEW ── */}
-      {viewMode === 'list' && (
+      {densityMode !== 'single' && viewMode === 'list' && (
         filtered.length === 0 ? (
           <div style={{ background: 'linear-gradient(135deg, var(--color-bg-surface-1) 0%, #fef8f0 100%)', borderRadius: 'var(--radius-xl)', border: '1px solid var(--color-border-subtle)', boxShadow: 'var(--shadow-card)', padding: '48px 24px', textAlign: 'center' as const }}>
             <EmptyState icon="📋" title={t('planner.noTasks')} description={t('planner.noTasksHint')}
@@ -525,22 +990,58 @@ export default function Planner() {
           </div>
         ) : (
           <div className="space-y-3">
-            {filtered.map((task, idx) => (
-              <TaskCard
-                key={task.id} task={task} expanded={expandedIds.has(task.id)} confirmDelete={confirmDeleteId === task.id}
-                onToggleStatus={() => cycleStatus(task)} onEdit={() => openEdit(task)}
-                onDelete={() => setConfirmDeleteId(task.id)} onConfirmDelete={() => handleDelete(task.id)}
-                onCancelDelete={() => setConfirmDeleteId(null)} onToggleExpand={() => toggleExpand(task.id)}
-                onToggleSubtask={(sid) => { const st = task.subtasks.map((s) => s.id === sid ? { ...s, completed: !s.completed } : s); updateTask(task.id, { subtasks: st }) }}
-                accentColor={accentColor} index={idx}
-              />
-            ))}
+            {/* 今天 + 逾期的任务 */}
+            {filtered.filter((t) => !t.dueDate || t.dueDate <= todayStr()).length > 0 && (
+              <>
+                <div className="text-sm font-semibold mt-2 mb-1" style={{ color: 'var(--color-text-secondary)' }}>
+                  今天及之前
+                </div>
+                {filtered
+                  .filter((t) => !t.dueDate || t.dueDate <= todayStr())
+                  .map((task, idx) => (
+                    <TaskCard
+                      key={task.id} task={task} expanded={expandedIds.has(task.id)} confirmDelete={confirmDeleteId === task.id}
+                      onToggleStatus={() => cycleStatus(task)} onEdit={() => openEdit(task)}
+                      onDelete={() => setConfirmDeleteId(task.id)} onConfirmDelete={() => handleDelete(task.id)}
+                      onCancelDelete={() => setConfirmDeleteId(null)} onToggleExpand={() => toggleExpand(task.id)}
+                      onToggleSubtask={(sid) => { const st = task.subtasks.map((s) => s.id === sid ? { ...s, completed: !s.completed } : s); updateTask(task.id, { subtasks: st }) }}
+                      accentColor={accentColor} index={idx}
+                    />
+                  ))}
+              </>
+            )}
+
+            {/* 未来的任务 - 默认折叠 */}
+            {filtered.filter((t) => t.dueDate && t.dueDate > todayStr()).length > 0 && (
+              <>
+                <div
+                  className="text-sm font-semibold mt-4 mb-1 cursor-pointer flex items-center gap-2 select-none"
+                  style={{ color: 'var(--color-text-muted)' }}
+                  onClick={() => setShowFutureTasks(!showFutureTasks)}
+                >
+                  <span>{showFutureTasks ? '▼' : '▶'}</span>
+                  以后 ({filtered.filter((t) => t.dueDate && t.dueDate > todayStr()).length} 个任务)
+                </div>
+                {showFutureTasks && filtered
+                  .filter((t) => t.dueDate && t.dueDate > todayStr())
+                  .map((task, idx) => (
+                    <TaskCard
+                      key={task.id} task={task} expanded={expandedIds.has(task.id)} confirmDelete={confirmDeleteId === task.id}
+                      onToggleStatus={() => cycleStatus(task)} onEdit={() => openEdit(task)}
+                      onDelete={() => setConfirmDeleteId(task.id)} onConfirmDelete={() => handleDelete(task.id)}
+                      onCancelDelete={() => setConfirmDeleteId(null)} onToggleExpand={() => toggleExpand(task.id)}
+                      onToggleSubtask={(sid) => { const st = task.subtasks.map((s) => s.id === sid ? { ...s, completed: !s.completed } : s); updateTask(task.id, { subtasks: st }) }}
+                      accentColor={accentColor} index={idx}
+                    />
+                  ))}
+              </>
+            )}
           </div>
         )
       )}
 
       {/* ── BOARD VIEW ── */}
-      {viewMode === 'board' && (
+      {densityMode !== 'single' && viewMode === 'board' && (
         <DndContext
           collisionDetection={closestCenter}
           sensors={sensors}
@@ -585,7 +1086,7 @@ export default function Planner() {
       )}
 
       {/* ── CALENDAR VIEW ── */}
-      {viewMode === 'calendar' && (
+      {densityMode !== 'single' && viewMode === 'calendar' && (
         <div>
           {/* Month nav */}
           <div className="flex items-center gap-4 mb-5">
@@ -711,7 +1212,13 @@ export default function Planner() {
                         <span className={`text-sm font-medium truncate ${task.status === 'completed' ? 'line-through text-[var(--color-text-muted)]' : 'text-[var(--color-text-primary)]'}`}>{task.title}</span>
                         {task.project && <Badge variant="accent">{task.project}</Badge>}
                       </div>
-                      <span className="text-xs text-[var(--color-text-muted)]">P{task.priority} · {fmtDuration(task.estimatedMinutes, t)}</span>
+                      <span className="text-xs text-[var(--color-text-muted)]">
+                        P{task.priority}
+                        {((taskActualTimeMap[task.id] || 0) > 0 || task.estimatedMinutes > 0) && ' · '}
+                        {(taskActualTimeMap[task.id] || 0) > 0 && `已投入 ${Math.round(taskActualTimeMap[task.id])}m`}
+                        {(taskActualTimeMap[task.id] || 0) > 0 && task.estimatedMinutes > 0 && ' / '}
+                        {task.estimatedMinutes > 0 && `预估 ${Math.round(task.estimatedMinutes)}m`}
+                      </span>
                     </div>
                   </div>
                 ))}
@@ -722,7 +1229,7 @@ export default function Planner() {
       )}
 
       {/* ── TIMELINE VIEW ── */}
-      {viewMode === 'timeline' && (
+      {densityMode !== 'single' && viewMode === 'timeline' && (
         <div>
           {timelineData.tasks.length === 0 ? (
             <div style={{ background: 'linear-gradient(135deg, var(--color-bg-surface-1) 0%, #fef8f0 100%)', borderRadius: 'var(--radius-xl)', border: '1px solid var(--color-border-subtle)', boxShadow: 'var(--shadow-card)', padding: '48px 24px', textAlign: 'center' as const }}>
@@ -858,7 +1365,153 @@ export default function Planner() {
         </div>
       </Modal>
 
+      {/* ── 庆祝动画覆盖层 ── */}
+      {showCelebration && (
+        <div
+          className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none"
+          style={{
+            background: 'rgba(0, 0, 0, 0.3)',
+            animation: 'fadeIn 0.3s ease-out',
+          }}
+        >
+          <div
+            className="p-12 rounded-3xl text-center"
+            style={{
+              background: 'linear-gradient(135deg, var(--color-green) 0%, var(--color-blue) 50%, var(--color-purple) 100%)',
+              boxShadow: '0 25px 80px rgba(0, 0, 0, 0.3)',
+              animation: 'celebratePop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)',
+            }}
+          >
+            <div className="text-6xl mb-4">🎉</div>
+            <h2
+              className="text-2xl font-bold mb-2 text-white"
+              style={{ fontFamily: 'Quicksand, sans-serif' }}
+            >
+              太棒了！
+            </h2>
+            <p className="text-white/90">
+              「{celebrationTaskTitle}」完成了！
+            </p>
+            <div className="mt-4 text-4xl">✨ 🚀 🌟</div>
+          </div>
+        </div>
+      )}
+
+      {/* ── 「我不想做」共情弹窗 ── */}
+      <Modal
+        isOpen={showEmpathyModal}
+        onClose={() => setShowEmpathyModal(false)}
+        title="💬 没关系，我们来看看"
+        size="md"
+      >
+        <div className="space-y-4 py-4">
+          <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+            不想做是很正常的。我们有几个选择：
+          </p>
+
+          {/* 选项 1: 只做 5 分钟 */}
+          <button
+            onClick={() => {
+              // 标记为进行中，设置专注时间短
+              if (empathyTaskId) {
+                updateTask(empathyTaskId, { status: 'in_progress' })
+              }
+              setShowEmpathyModal(false)
+            }}
+            className="w-full p-4 rounded-xl text-left transition-all duration-200 hover:scale-[1.01]"
+            style={{
+              background: 'var(--color-green-soft)',
+              border: '1px solid var(--color-green)',
+            }}
+          >
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">⏱️</span>
+              <div>
+                <p className="font-semibold" style={{ color: 'var(--color-text-primary)' }}>
+                  只做 5 分钟就行
+                </p>
+                <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+                  先开始，进入状态后就容易继续了
+                </p>
+              </div>
+            </div>
+          </button>
+
+          {/* 选项 2: 找更简单的 */}
+          <button
+            onClick={() => {
+              setDensityMode('today')
+              setShowEmpathyModal(false)
+            }}
+            className="w-full p-4 rounded-xl text-left transition-all duration-200 hover:scale-[1.01]"
+            style={{
+              background: 'var(--color-blue-soft)',
+              border: '1px solid var(--color-blue)',
+            }}
+          >
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">🔄</span>
+              <div>
+                <p className="font-semibold" style={{ color: 'var(--color-text-primary)' }}>
+                  换个更容易的任务
+                </p>
+                <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+                  从待办清单里挑个简单的先完成
+                </p>
+              </div>
+            </div>
+          </button>
+
+          {/* 选项 3: 明天再说 */}
+          <button
+            onClick={() => {
+              if (empathyTaskId) {
+                const today = new Date()
+                today.setDate(today.getDate() + 1)
+                const tomorrow = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+                updateTask(empathyTaskId, { dueDate: tomorrow })
+              }
+              setShowEmpathyModal(false)
+            }}
+            className="w-full p-4 rounded-xl text-left transition-all duration-200 hover:scale-[1.01]"
+            style={{
+              background: 'var(--color-purple-soft)',
+              border: '1px solid var(--color-purple)',
+            }}
+          >
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">🌙</span>
+              <div>
+                <p className="font-semibold" style={{ color: 'var(--color-text-primary)' }}>
+                  明天再说
+                </p>
+                <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+                  休息一下，状态会更好的
+                </p>
+              </div>
+            </div>
+          </button>
+        </div>
+      </Modal>
+
+      {/* ── 统一任务面板 ── */}
+      <TaskPanel
+        isOpen={taskPanelOpen}
+        onClose={() => setTaskPanelOpen(false)}
+        mode={taskPanelMode}
+        task={taskPanelTask}
+      />
+
       <style>{`
+        @keyframes celebratePop {
+          0% { transform: scale(0.5); opacity: 0; }
+          50% { transform: scale(1.1); }
+          100% { transform: scale(1); opacity: 1; }
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
         @keyframes fadeInUp {
           from { opacity: 0; transform: translateY(8px); }
           to { opacity: 1; transform: translateY(0); }

@@ -487,7 +487,7 @@ export default function DailyGoalAchievedModal({ isOpen, onClose, totalMinutes, 
                 navigate('/analytics')
               }}
               className="w-full py-3 rounded-xl font-semibold text-white transition-all hover:scale-[1.02] active:scale-[0.98]"
-              style={{ background: 'var(--color-blue-gradient)', boxShadow: '4px 4px 0px var(--color-blue-soft)' }}
+              style={{ background: 'var(--color-blue-gradient)', boxShadow: '4px 4px 0px var(--color-blue-shadow)' }}
             >
               查看完整报告
             </button>

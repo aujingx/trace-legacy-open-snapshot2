@@ -418,30 +418,36 @@ export default function DetailPanel({ data, mode, defaultDate, onClose, onSave, 
                 <span className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>分钟</span>
               </div>
               <div className="flex gap-2">
-                {[25, 50, 90].map((m) => (
-                  <button
-                    key={m}
-                    onClick={() => setEstimatedMinutes(m)}
-                    className="flex-1 px-2 py-2 rounded-lg text-xs font-semibold transition-all"
-                    style={{
-                      background: estimatedMinutes === m ? 'var(--color-blue)' : '#FAF8F5',
-                      color: estimatedMinutes === m ? 'white' : 'var(--color-text-secondary)',
-                      border: estimatedMinutes === m ? '2px solid var(--color-blue-hover)' : '2px solid transparent',
-                    }}
-                  >
-                    {m}m
-                  </button>
-                ))}
+                {[15, 30, 60, 120].map((m) => {
+                  const label = m >= 60 ? `${m / 60}h` : `${m}m`
+                  return (
+                    <button
+                      key={m}
+                      onClick={() => setEstimatedMinutes(m)}
+                      className="flex-1 px-2 py-2 rounded-lg text-xs font-semibold transition-all"
+                      style={{
+                        background: estimatedMinutes === m ? 'var(--color-blue)' : '#FAF8F5',
+                        color: estimatedMinutes === m ? 'white' : 'var(--color-text-secondary)',
+                        border: estimatedMinutes === m ? '2px solid var(--color-blue-hover)' : '2px solid transparent',
+                      }}
+                    >
+                      {label}
+                    </button>
+                  )
+                })}
               </div>
             </div>
 
             <div>
-              <label className="block text-sm mb-2 font-medium" style={{ color: 'var(--color-text-secondary)' }}>第一步</label>
+              <label className="block text-sm mb-2 font-medium" style={{ color: 'var(--color-text-secondary)' }}>
+                第一步 🐣
+                <span className="text-xs ml-2" style={{ color: 'var(--color-text-muted)' }}>（降低启动门槛的小技巧）</span>
+              </label>
               <input
                 type="text"
                 value={firstStep}
                 onChange={(e) => setFirstStep(e.target.value)}
-                placeholder="例如: 撰写需求文档 (选填)"
+                placeholder="例如: 打开文档写第一行"
                 className="w-full px-4 py-3 rounded-xl text-sm focus:outline-none transition-all"
                 style={{ background: '#FAF8F5', border: '2px solid var(--color-border-light)', color: 'var(--color-text-primary)' }}
                 onFocus={(e) => e.currentTarget.style.borderColor = 'var(--color-blue)'}

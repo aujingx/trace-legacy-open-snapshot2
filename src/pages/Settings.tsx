@@ -13,11 +13,15 @@ import {
   Pencil,
   X,
   Check,
+  Bot,
+  Download,
+  Keyboard,
+  Info,
 } from 'lucide-react'
 import { useAppStore } from '../store/useAppStore'
 import { useToastFeedback } from '../hooks/useToastFeedback'
 
-// Setting sections with grouped navigation (Beta version - simplified)
+// Setting sections with grouped navigation
 const SETTING_SECTIONS = [
   {
     group: '🎨 外观',
@@ -34,6 +38,12 @@ const SETTING_SECTIONS = [
     ],
   },
   {
+    group: '🤖 AI 智能',
+    items: [
+      { key: 'ai', label: 'AI 分类', icon: Bot, color: 'var(--color-purple)' },
+    ],
+  },
+  {
     group: '🛡️ Guardian',
     items: [
       { key: 'guardian', label: 'Guardian', icon: Shield, color: 'var(--color-purple)' },
@@ -43,6 +53,9 @@ const SETTING_SECTIONS = [
     group: '⚙️ 高级',
     items: [
       { key: 'categories', label: '分类管理', icon: Tag, color: 'var(--color-text-muted)' },
+      { key: 'dataExport', label: '数据导出', icon: Download, color: 'var(--color-blue)' },
+      { key: 'shortcuts', label: '快捷键', icon: Keyboard, color: 'var(--color-green)' },
+      { key: 'about', label: '关于', icon: Info, color: 'var(--color-text-muted)' },
       { key: 'clearData', label: '清除所有数据', icon: Trash2, color: 'var(--color-coral)' },
     ],
   },
@@ -205,6 +218,219 @@ export default function Settings() {
                   </div>
                 </div>
               )}
+            </div>
+          </div>
+        )
+
+      case 'ai':
+        return (
+          <div className="space-y-6">
+            <div
+              className="p-6 rounded-2xl"
+              style={{
+                background: 'var(--color-bg-surface-1)',
+                border: '2px solid var(--color-border-strong)',
+                boxShadow: '4px 4px 0px var(--color-border-strong)',
+              }}
+            >
+              <div className="flex items-center gap-3 mb-6">
+                <div
+                  className="w-12 h-12 rounded-xl flex items-center justify-center"
+                  style={{ background: 'var(--color-purple-soft)' }}
+                >
+                  <Bot size={20} style={{ color: 'var(--color-purple)' }} />
+                </div>
+                <div>
+                  <h3 className="text-base font-semibold" style={{ color: 'var(--color-text-primary)' }}>
+                    AI 自动分类
+                  </h3>
+                  <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
+                    智能识别活动内容并自动分类
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>
+                    启用 AI 自动分类
+                  </span>
+                  <div className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+                    Pro 功能
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-xl" style={{ background: 'var(--color-bg-surface-2)' }}>
+                  <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+                    AI 分类功能可以自动识别您的活动内容，并智能归类到合适的分类中，减少手动操作的麻烦。
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )
+
+      case 'dataExport':
+        return (
+          <div className="space-y-6">
+            <div
+              className="p-6 rounded-2xl"
+              style={{
+                background: 'var(--color-bg-surface-1)',
+                border: '2px solid var(--color-border-strong)',
+                boxShadow: '4px 4px 0px var(--color-border-strong)',
+              }}
+            >
+              <div className="flex items-center gap-3 mb-6">
+                <div
+                  className="w-12 h-12 rounded-xl flex items-center justify-center"
+                  style={{ background: 'var(--color-blue-soft)' }}
+                >
+                  <Download size={20} style={{ color: 'var(--color-blue)' }} />
+                </div>
+                <div>
+                  <h3 className="text-base font-semibold" style={{ color: 'var(--color-text-primary)' }}>
+                    数据导出
+                  </h3>
+                  <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
+                    导出您的时间追踪数据
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <button
+                  onClick={() => success('JSON 导出功能开发中...')}
+                  className="w-full flex items-center justify-between p-4 rounded-xl transition-all hover:opacity-90"
+                  style={{ background: 'var(--color-bg-surface-2)' }}
+                >
+                  <span className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>
+                    导出为 JSON
+                  </span>
+                  <Download size={16} style={{ color: 'var(--color-text-muted)' }} />
+                </button>
+
+                <button
+                  onClick={() => success('CSV 导出功能开发中...')}
+                  className="w-full flex items-center justify-between p-4 rounded-xl transition-all hover:opacity-90"
+                  style={{ background: 'var(--color-bg-surface-2)' }}
+                >
+                  <span className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>
+                    导出为 CSV
+                  </span>
+                  <Download size={16} style={{ color: 'var(--color-text-muted)' }} />
+                </button>
+
+                <button
+                  onClick={() => success('PDF 报告导出功能开发中...')}
+                  className="w-full flex items-center justify-between p-4 rounded-xl transition-all hover:opacity-90"
+                  style={{ background: 'var(--color-bg-surface-2)' }}
+                >
+                  <span className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>
+                    导出 PDF 报告
+                  </span>
+                  <span className="text-xs px-2 py-1 rounded-full" style={{ background: 'var(--color-purple-soft)', color: 'var(--color-purple)' }}>
+                    Pro
+                  </span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+
+      case 'shortcuts':
+        return (
+          <div className="space-y-6">
+            <div
+              className="p-6 rounded-2xl"
+              style={{
+                background: 'var(--color-bg-surface-1)',
+                border: '2px solid var(--color-border-strong)',
+                boxShadow: '4px 4px 0px var(--color-border-strong)',
+              }}
+            >
+              <div className="flex items-center gap-3 mb-6">
+                <div
+                  className="w-12 h-12 rounded-xl flex items-center justify-center"
+                  style={{ background: 'var(--color-green-soft)' }}
+                >
+                  <Keyboard size={20} style={{ color: 'var(--color-green)' }} />
+                </div>
+                <div>
+                  <h3 className="text-base font-semibold" style={{ color: 'var(--color-text-primary)' }}>
+                    全局快捷键
+                  </h3>
+                  <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
+                    快速访问常用功能
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                {[
+                  { action: '开始/暂停专注', shortcut: 'Cmd/Ctrl + Shift + F' },
+                  { action: '快速添加任务', shortcut: 'Cmd/Ctrl + N' },
+                  { action: '显示/隐藏窗口', shortcut: 'Cmd/Ctrl + Shift + H' },
+                  { action: '打开设置', shortcut: 'Cmd/Ctrl + ,' },
+                ].map((item) => (
+                  <div key={item.action} className="flex items-center justify-between p-4 rounded-xl" style={{ background: 'var(--color-bg-surface-2)' }}>
+                    <span className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>
+                      {item.action}
+                    </span>
+                    <kbd
+                      className="px-3 py-1 rounded-lg text-xs font-mono"
+                      style={{
+                        background: 'var(--color-bg-surface-1)',
+                        border: '1px solid var(--color-border-light)',
+                        color: 'var(--color-text-secondary)',
+                      }}
+                    >
+                      {item.shortcut}
+                    </kbd>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )
+
+      case 'about':
+        return (
+          <div className="space-y-6">
+            <div
+              className="p-6 rounded-2xl"
+              style={{
+                background: 'var(--color-bg-surface-1)',
+                border: '2px solid var(--color-border-strong)',
+                boxShadow: '4px 4px 0px var(--color-border-strong)',
+              }}
+            >
+              <div className="text-center mb-6">
+                <div
+                  className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-4"
+                  style={{ background: 'var(--color-blue-gradient)' }}
+                >
+                  <span className="text-white text-3xl">⏱️</span>
+                </div>
+                <h2 className="text-xl font-bold mb-1" style={{ color: 'var(--color-text-primary)', fontFamily: 'Quicksand, sans-serif' }}>
+                  Trace
+                </h2>
+                <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
+                  版本 1.0.0 (Beta)
+                </p>
+              </div>
+
+              <div className="p-4 rounded-xl mb-4" style={{ background: 'var(--color-bg-surface-2)' }}>
+                <p className="text-sm text-center" style={{ color: 'var(--color-text-secondary)' }}>
+                  智能时间追踪工具，帮助您更好地了解和管理自己的时间。
+                </p>
+              </div>
+
+              <div className="text-center space-y-2">
+                <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+                  © 2025 Trace. All rights reserved.
+                </p>
+              </div>
             </div>
           </div>
         )

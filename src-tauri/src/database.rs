@@ -163,7 +163,6 @@ CREATE TABLE IF NOT EXISTS tracking_rules (
     url_pattern TEXT,
     target_category TEXT NOT NULL,
     priority INTEGER DEFAULT 5,
-    created_at TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

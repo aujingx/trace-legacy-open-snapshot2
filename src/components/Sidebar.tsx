@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { LayoutDashboard, Clock, ListTodo, BarChart3, Settings, User } from 'lucide-react';
@@ -57,6 +57,29 @@ export default function Sidebar() {
   const activeModules = useAppStore((s: AppState) => s.activeModules);
   const location = useLocation();
   const { openFocusModal } = useFocusModal();
+
+  // Track tracking status and time
+  const [trackingTime, setTrackingTime] = useState(0);
+  const [isTracking, setIsTracking] = useState(false);
+
+  useEffect(() => {
+    setIsTracking(trackingService.isTracking());
+
+    const interval = setInterval(() => {
+      setIsTracking(trackingService.isTracking());
+
+      // Calculate current session duration
+      const activity = trackingService.getCurrentActivity();
+      if (activity) {
+        const start = new Date(activity.startTime).getTime();
+        const now = Date.now();
+        const minutes = Math.floor((now - start) / 60000);
+        setTrackingTime(minutes);
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   const navItems = useMemo(() => ALL_NAV_ITEMS(t), [t]);
 
@@ -132,21 +155,22 @@ export default function Sidebar() {
         <div
           className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl cursor-pointer transition-all hover:scale-[1.02]"
           style={{
-            background: trackingService.isTracking()
+            background: isTracking
               ? 'var(--color-purple)'
               : 'rgba(212, 196, 251, 0.12)',
-            border: `2px solid ${trackingService.isTracking() ? '#B8A0E8' : 'var(--color-purple)'}`,
+            border: `2px solid ${isTracking ? '#B8A0E8' : 'var(--color-purple)'}`,
           }}
           onClick={() => openFocusModal()}
         >
-          {trackingService.isTracking() ? (
+          {isTracking ? (
             <>
               <div
                 className="w-2 h-2 rounded-full animate-pulse"
                 style={{ background: '#4A3A6A' }}
               />
               <span className="text-sm font-semibold" style={{ color: '#4A3A6A' }}>
-                24:32
+                {Math.floor(trackingTime / 60).toString().padStart(2, '0')}:
+                {(trackingTime % 60).toString().padStart(2, '0')}
               </span>
             </>
           ) : (

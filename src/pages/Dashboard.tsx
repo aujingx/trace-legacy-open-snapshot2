@@ -38,7 +38,6 @@ export default function Dashboard() {
   const loadTasks = useAppStore((s) => s.loadTasks);
   const categories = useAppStore((s) => s.categories);
   const dailyGoalMinutes = useAppStore((s) => s.dailyGoalMinutes);
-  const guardianSettings = useAppStore((s) => s.guardianSettings);
   const focusState = useAppStore((s) => s.focusState);
   const [loading, setLoading] = useState(true);
 
@@ -90,27 +89,9 @@ export default function Dashboard() {
     Promise.all([loadActivities(), loadTasks()]).finally(() => setLoading(false));
   }, [loadActivities, loadTasks]);
 
-  // Auto-trigger Morning Ritual and Daily Review
-  const lastMorningRitualDate = useAppStore((s) => s.lastMorningRitualDate);
-
-  useEffect(() => {
-    if (loading) return;
-
-    const today = todayStr();
-    const currentHour = new Date().getHours();
-
-    // Check Morning Ritual: 5:00 - 18:00, and not done today
-    if (
-      guardianSettings.morningRitualEnabled &&
-      currentHour >= 5 &&
-      currentHour < 18 &&
-      lastMorningRitualDate !== today
-    ) {
-      // Delay 1 second to not overwhelm user on page load
-      const timer = setTimeout(() => setShowMorningRitual(true), 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [loading, guardianSettings, lastMorningRitualDate]);
+  // Morning Ritual auto-modal temporarily disabled
+  // Should use notification-style triggers, not blocking entry modals
+  // State and modal component are retained for future manual/user-initiated triggers
 
   if (loading) {
     return (

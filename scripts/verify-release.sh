@@ -16,7 +16,7 @@ python3 -m unittest discover -s backend/tests
 echo "[4/5] rust build"
 cargo build --manifest-path src-tauri/Cargo.toml
 
-if [[ "${RUN_TAURI_BUILD:-0}" == "1" ]]; then
+if [[ "${RUN_TAURI_BUILD:-1}" == "1" ]]; then
   echo "[5/5] tauri build"
   npm run tauri build
 else

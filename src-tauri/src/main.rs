@@ -22,7 +22,7 @@ use std::collections::HashMap;
 use std::env;
 use std::fs;
 use std::path::PathBuf;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, OnceLock};
 use std::time::{Duration, Instant};
 use anyhow::{Result, anyhow};
 use chrono::{Local, NaiveDate};
@@ -32,6 +32,8 @@ use serde::{Serialize, Deserialize};
 use sqlx::{Error, SqlitePool};
 use uuid::Uuid;
 use tauri::{AppHandle, State, Emitter};
+
+static APP_DATA_DIR: OnceLock<PathBuf> = OnceLock::new();
 
 // 数据结构
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -183,8 +185,11 @@ struct DoubaoRequest {
 
 // 获取数据目录
 fn get_data_dir() -> Result<PathBuf> {
-    let home_dir = dirs::data_dir().ok_or_else(|| anyhow!("无法获取数据目录"))?;
-    let app_dir = home_dir.join("trace");
+    let app_dir = APP_DATA_DIR
+        .get()
+        .cloned()
+        .or_else(|| dirs::data_dir().map(|home_dir| home_dir.join("trace")))
+        .ok_or_else(|| anyhow!("无法获取数据目录"))?;
     fs::create_dir_all(&app_dir)?;
     Ok(app_dir)
 }
@@ -207,15 +212,21 @@ fn get_daily_plan_path(date: NaiveDate) -> Result<PathBuf> {
     Ok(data_dir.join(format!("plan_{}.json", date)))
 }
 
-// 加载活动数据
-fn load_activities(state: &AppState, date: NaiveDate) -> Result<()> {
+// 纯函数：从文件读取指定日期的活动，不碰全局状态
+// 所有统计类查询统一走这个入口，确保读取口径一致
+fn read_activities_from_file(date: NaiveDate) -> Result<Vec<Activity>> {
     let path = get_activities_path(date)?;
     if !path.exists() {
-        *state.activities.lock().unwrap_or_else(|e| e.into_inner()) = Vec::new();
-        return Ok(());
+        return Ok(Vec::new());
     }
     let content = fs::read_to_string(&path)?;
     let activities: Vec<Activity> = serde_json::from_str(&content)?;
+    Ok(activities)
+}
+
+// 加载活动数据到全局内存
+fn load_activities(state: &AppState, date: NaiveDate) -> Result<()> {
+    let activities = read_activities_from_file(date)?;
     *state.activities.lock().unwrap_or_else(|e| e.into_inner()) = activities;
     *state.current_loaded_date.lock().unwrap_or_else(|e| e.into_inner()) = date;
     Ok(())
@@ -871,24 +882,16 @@ fn get_monthly_stats(year: i32, month: u32, _state: tauri::State<'_, AppState>) 
         _ => 30,
     };
 
-    // 遍历每一天
+    // 遍历每一天 - 统一走 read_activities_from_file 入口
     for day in 1..=num_days {
         let date = NaiveDate::from_ymd_opt(year, month, day)
             .ok_or_else(|| format!("Invalid date: {}-{}-{}", year, month, day))?;
-        let path = get_activities_path(date).map_err(|e| e.to_string())?;
 
-        // 如果文件不存在，这天没有记录，跳过或者加0
-        if !path.exists() {
-            continue;
-        }
-
-        // 读取并计算总分钟
-        if let Ok(contents) = std::fs::read_to_string(&path) {
-            if let Ok(activities) = serde_json::from_str::<Vec<Activity>>(&contents) {
-                let total: f64 = activities.iter().map(|a| a.duration_minutes).sum();
-                if total > 0.0 {
-                    result.push(MonthlyDayStat { day, total_minutes: total });
-                }
+        // 使用统一的文件读取入口，确保口径一致
+        if let Ok(activities) = read_activities_from_file(date) {
+            let total: f64 = activities.iter().map(|a| a.duration_minutes).sum();
+            if total > 0.0 {
+                result.push(MonthlyDayStat { day, total_minutes: total });
             }
         }
     }
@@ -904,15 +907,10 @@ fn get_weekly_stats(_state: tauri::State<'_, AppState>) -> Result<Vec<WeeklyStat
 
     let today = Local::now().date_naive();
 
-    // 遍历最近7天
+    // 遍历最近7天 - 统一走 read_activities_from_file 入口
     for i in 0..7 {
         let date = today - chrono::Days::new(i);
-        let path = get_activities_path(date).map_err(|e| e.to_string())?;
-
-        if path.exists() {
-            let content = fs::read_to_string(&path).map_err(|e| e.to_string())?;
-            let activities: Vec<Activity> = serde_json::from_str(&content).map_err(|e| e.to_string())?;
-
+        if let Ok(activities) = read_activities_from_file(date) {
             for activity in activities.iter() {
                 if let Some(cat) = &activity.category {
                     *category_totals.entry(cat.clone()).or_default() += activity.duration_minutes;
@@ -949,15 +947,18 @@ fn get_all_activities_export(_state: tauri::State<'_, AppState>) -> Result<Vec<A
     let mut all_activities: Vec<Activity> = Vec::new();
     let _data_dir = get_data_dir().map_err(|e| e.to_string())?;
 
-    // 读取所有活动文件
+    // 读取所有活动文件 - 内部文件读取统一走 read_activities_from_file
     if let Ok(entries) = fs::read_dir(_data_dir) {
         for entry in entries.flatten() {
             let path = entry.path();
             if let Some(file_name) = path.file_name().and_then(|f| f.to_str()) {
                 if file_name.starts_with("activities_") && file_name.ends_with(".json") {
-                    if let Ok(content) = fs::read_to_string(&path) {
-                        if let Ok(activities) = serde_json::from_str::<Vec<Activity>>(&content) {
-                            all_activities.extend(activities);
+                    // 从文件名解析日期，走统一读取入口
+                    if let Some(date_str) = file_name.strip_prefix("activities_").and_then(|s| s.strip_suffix(".json")) {
+                        if let Ok(date) = NaiveDate::parse_from_str(date_str, "%Y-%m-%d") {
+                            if let Ok(activities) = read_activities_from_file(date) {
+                                all_activities.extend(activities);
+                            }
                         }
                     }
                 }
@@ -2075,7 +2076,7 @@ fn main() {
         current_loaded_date: Arc::new(Mutex::new(today)),
         planned_tasks: Arc::new(Mutex::new(Vec::new())),
         settings: Arc::new(Mutex::new(Settings::default())),
-        is_tracking: Arc::new(Mutex::new(false)),
+        is_tracking: Arc::new(Mutex::new(true)),
         http_client: Client::new(),
         // ============================================
         // 新架构 - 参考 ActivityWatch
@@ -2107,49 +2108,12 @@ fn main() {
         dns_blocker: dns_block::DnsBlockManager::new(),
     });
 
-    // 克隆状态用于轮询线程
-    let state_clone = state.clone();
-    let rt_handle = rt.handle().clone();
-
-    // 加载持久化数据：活动和今日计划
-    let _ = load_activities(&state, today);
-    let _ = load_today_tasks(&state);
-    let _ = load_settings(&state);
-
-    // 启动活动轮询线程（每 1 秒检查一次当前窗口）
-    std::thread::spawn(move || {
-        loop {
-            std::thread::sleep(Duration::from_secs(1));
-            // 使用新的 Heartbeat 架构，减少 70-90% 的数据库写入
-            let result = poll_active_window_v2(&state_clone);
-
-            // 脏标记 + 节流写入：最多 30 秒间隔写入，只有脏才写入
-            let mut dirty_guard = state_clone.activities_dirty.lock().unwrap_or_else(|e| e.into_inner());
-            let mut last_save_guard = state_clone.last_save_time.lock().unwrap_or_else(|e| e.into_inner());
-            let now = Instant::now();
-            let elapsed = now.duration_since(*last_save_guard);
-
-            if (*dirty_guard && elapsed >= Duration::from_secs(5)) || elapsed >= Duration::from_secs(30) {
-                let _ = save_activities(&state_clone);
-                *dirty_guard = false;
-                *last_save_guard = now;
-            }
-
-            // 如果有新活动创建，触发 AI 自动匹配
-            if let Ok(Some((activity_id, window_title, app_name))) = result {
-                let state_clone2 = state_clone.clone();
-                rt_handle.spawn(async move {
-                    let _ = ai_auto_match_activity(activity_id, window_title, app_name, &state_clone2).await;
-                });
-            }
-        }
-    });
-
     use tauri::Manager;
     use tauri::menu::{MenuBuilder, MenuItem};
     use tauri::tray::TrayIconBuilder;
 
     let state_for_setup = state.clone();
+    let rt_handle_for_setup = rt.handle().clone();
 
     tauri::Builder::default()
         .plugin(tauri_plugin_autostart::init(
@@ -2173,22 +2137,60 @@ fn main() {
         .setup(move |app| {
             // state is cloned for setup because state was moved into .manage()
             let state = state_for_setup;
+            let rt_handle = rt_handle_for_setup.clone();
 
-            // 安全获取配置目录，失败时用临时目录兜底
-            let app_config_dir = app.path().app_config_dir()
+            // 统一活动 JSON 与 SQLite 的真实数据目录，避免打包后各写各的。
+            let app_data_dir = app.path().app_config_dir()
                 .unwrap_or_else(|_| std::env::temp_dir().join("trace"));
+            let _ = APP_DATA_DIR.set(app_data_dir.clone());
 
             // 创建目录，失败只打日志不崩溃
-            if let Err(e) = std::fs::create_dir_all(&app_config_dir) {
+            if let Err(e) = std::fs::create_dir_all(&app_data_dir) {
                 eprintln!("[WARN] Couldn't create app config dir: {}", e);
             }
 
-            let db_path = app_config_dir.join("trace.db");
+            let db_path = app_data_dir.join("trace.db");
             let db_url = format!("sqlite:{}", db_path.to_string_lossy());
             let pool = tauri::async_runtime::block_on(async move {
                 SqlitePool::connect(&db_url).await
             }).map_err(|e| e.to_string())?;
             app.manage(pool);
+
+            // 目录就绪后再加载数据，避免启动时读写到不同根路径。
+            let startup_date = Local::now().date_naive();
+            let _ = load_activities(&state, startup_date);
+            let _ = load_today_tasks(&state);
+            let _ = load_settings(&state);
+
+            // 启动活动轮询线程（每 1 秒检查一次当前窗口）
+            let state_clone = state.clone();
+            std::thread::spawn(move || {
+                loop {
+                    std::thread::sleep(Duration::from_secs(1));
+                    // 使用新的 Heartbeat 架构，减少 70-90% 的数据库写入
+                    let result = poll_active_window_v2(&state_clone);
+
+                    // 脏标记 + 节流写入：最多 30 秒间隔写入，只有脏才写入
+                    let mut dirty_guard = state_clone.activities_dirty.lock().unwrap_or_else(|e| e.into_inner());
+                    let mut last_save_guard = state_clone.last_save_time.lock().unwrap_or_else(|e| e.into_inner());
+                    let now = Instant::now();
+                    let elapsed = now.duration_since(*last_save_guard);
+
+                    if (*dirty_guard && elapsed >= Duration::from_secs(5)) || elapsed >= Duration::from_secs(30) {
+                        let _ = save_activities(&state_clone);
+                        *dirty_guard = false;
+                        *last_save_guard = now;
+                    }
+
+                    // 如果有新活动创建，触发 AI 自动匹配
+                    if let Ok(Some((activity_id, window_title, app_name))) = result {
+                        let state_clone2 = state_clone.clone();
+                        rt_handle.spawn(async move {
+                            let _ = ai_auto_match_activity(activity_id, window_title, app_name, &state_clone2).await;
+                        });
+                    }
+                }
+            });
 
             // state is already defined outside, use it directly
             let is_tracking = *state.is_tracking.lock().unwrap_or_else(|e| e.into_inner());
@@ -2226,6 +2228,24 @@ fn main() {
                 state.feature_flags.merge_from_frontend(frontend_flags);
             }
             drop(settings_guard);
+
+            // 🔴 PHASE 0 STABILITY: Force-disable Guardian auto-modal triggers
+            // This ensures no popups interfere with core functionality testing
+            let pool_guard = state.db.lock().unwrap_or_else(|e| e.into_inner());
+            if let Some(pool) = &*pool_guard {
+                let _ = tauri::async_runtime::block_on(async {
+                    sqlx::query(
+                        "UPDATE guardian_settings SET
+                            enable_morning_ritual = 0,
+                            enable_daily_review = 0,
+                            enable_now_engine = 0
+                        WHERE user_id = 1"
+                    )
+                    .execute(pool)
+                    .await
+                });
+            }
+            drop(pool_guard);
 
             // 🔍 权限自检 - 检查辅助功能权限并通知前端
             let (has_permission, perm_title, perm_message) = check_permissions();
@@ -2354,6 +2374,19 @@ fn main() {
                         idle_detector.run_detection_loop(app_handle, &broadcast_manager, on_idle, on_active).await;
                     });
                 });
+            }
+
+            // 确保主窗口显示并获得焦点
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.show();
+                let _ = window.set_focus();
+            }
+
+            // 激活应用（macOS 特定），确保应用图标显示在 Dock 中
+            #[cfg(target_os = "macos")]
+            {
+                use tauri::Manager;
+                let _ = app.set_activation_policy(tauri::ActivationPolicy::Regular);
             }
 
             Ok(())

@@ -16,6 +16,7 @@
     },
     "windows": [
       {
+        "label": "main",
         "title": "Trace - AI 时间管理",
         "width": 1200,
         "height": 800,
@@ -25,7 +26,8 @@
         "fullscreen": false,
         "decorations": true,
         "transparent": false,
-        "visible": true
+        "visible": true,
+        "focus": true
       }
     ]
   },

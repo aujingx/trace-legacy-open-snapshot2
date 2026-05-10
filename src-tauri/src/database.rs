@@ -200,9 +200,9 @@ CREATE TABLE IF NOT EXISTS guardian_settings (
     last_daily_review_date TEXT,   -- YYYY-MM-DD
     tomorrow_top_task_id TEXT,     -- references tasks.id
     daily_review_time TEXT DEFAULT '20:00',
-    enable_morning_ritual INTEGER DEFAULT 1,
-    enable_daily_review INTEGER DEFAULT 1,
-    enable_now_engine INTEGER DEFAULT 1,
+    enable_morning_ritual INTEGER DEFAULT 0, -- PHASE 0: DISABLED
+    enable_daily_review INTEGER DEFAULT 0,     -- PHASE 0: DISABLED
+    enable_now_engine INTEGER DEFAULT 0,       -- PHASE 0: DISABLED
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

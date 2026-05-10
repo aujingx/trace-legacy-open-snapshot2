@@ -1,11 +1,33 @@
 // Trace Data Service
-// - Desktop: All data stored in native SQLite database via Tauri
+// - Desktop: Activities still use native JSON persistence; other domains use Tauri-backed storage
 // - Web demo: Falls back to localStorage for demo mode
 // All localStorage keys prefixed with 'trace-'
 //
 // Architecture:
 // - src/services/ipc/ - Tauri IPC bridge layer for each domain
 // - This file: maintains backward compatibility + localStorage fallback for web demo
+
+// ============================================================
+// Utility functions
+// ============================================================
+
+/** 获取今天、昨天、明天的日期字符串数组 */
+function getNearbyDays(): string[] {
+  const today = new Date().toISOString().slice(0, 10);
+  const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+  const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+  return [yesterday, today, tomorrow];
+}
+
+/** 获取过去 daysAgo 天到未来 daysAgo 天的日期字符串数组 */
+function getDateRange(daysAgo: number): string[] {
+  const days: string[] = [];
+  for (let i = -daysAgo; i <= daysAgo; i++) {
+    const date = new Date(Date.now() + i * 86400000).toISOString().slice(0, 10);
+    days.push(date);
+  }
+  return days;
+}
 
 // ============================================================
 // Types (re-exported for consumers)
@@ -32,6 +54,7 @@ export interface Activity {
   isManual: boolean;
   isAiClassified?: boolean; // Whether this activity was classified by AI
   aiApproved?: boolean | null; // User approval status: true = approved, false = rejected, null = not reviewed
+  taskId?: string; // Associated task ID, if any
 }
 
 export interface Subtask {
@@ -58,6 +81,7 @@ export interface Task {
   createdAt: string;
   // Scheduled time on Timeline
   scheduledStartTime?: string; // ISO string: when this task is scheduled to start
+  scheduledEndTime?: string; // ISO string: when this task is scheduled to end
   scheduledDate?: string; // YYYY-MM-DD: which day this task is scheduled for
   // Guardian Beta fields
   firstStep?: string;
@@ -362,8 +386,148 @@ const DataService = {
 
   updateTask: async (id: string, update: Partial<Task>): Promise<void> => {
     if (isDesktop()) {
+      // 🎯 P1: 统一 Timeline 前台任务条模型收敛
+      // 当设置 scheduledStartTime 时，如果没有对应的 time_block，自动创建一个
+      // 当设置 scheduledEndTime 时，同步更新已有 block 的 endTime
+      if (update.scheduledStartTime || update.scheduledEndTime) {
+        try {
+          // 用于查找 block 的日期范围
+          const daysToCheck = getNearbyDays();
+          if (update.scheduledStartTime) {
+            daysToCheck.push(update.scheduledStartTime.slice(0, 10));
+          }
+
+          // ✅ 并行查询所有日期，性能优化
+          const allBlocks = await Promise.all(daysToCheck.map(d => timeBlockIpc.getTimeBlocks(d)));
+          const existingTaskBlocks = allBlocks.flat().filter((b: TimeBlock) => b.taskId === id);
+
+          if (update.scheduledStartTime) {
+            const newDate = update.scheduledStartTime.slice(0, 10);
+
+            // Step 1: 删除旧日期的所有该任务的 time_block（处理跨天情况）
+            // ✅ keepTaskSchedule = true: 只是移动位置，不解除任务排期
+            for (const block of existingTaskBlocks) {
+              if (block.startTime.slice(0, 10) !== newDate) {
+                // 直接调用 IPC 层删除，options 参数由 dataService 自身处理，不传给 IPC
+                await timeBlockIpc.deleteTimeBlock(block.id);
+              }
+            }
+
+            // Step 2: 检查新日期是否已有 block，如果没有则创建
+            const blocksForNewDate = await timeBlockIpc.getTimeBlocks(newDate);
+            const hasExistingBlockInNewDate = blocksForNewDate.some((b: TimeBlock) => b.taskId === id);
+
+            if (!hasExistingBlockInNewDate) {
+              // 获取任务完整信息
+              const allTasks = await taskIpc.getTasks();
+              const task = allTasks.find((t: Task) => t.id === id);
+              if (task) {
+                const startDate = new Date(update.scheduledStartTime);
+                // 优先使用 update 中的 scheduledEndTime，其次用任务已有的 scheduledEndTime，最后用 estimatedMinutes 计算
+                const endTimeStr = update.scheduledEndTime || task.scheduledEndTime;
+                const endDate = endTimeStr
+                  ? new Date(endTimeStr)
+                  : new Date(startDate.getTime() + (task.estimatedMinutes || 60) * 60000);
+                const durationMinutes = Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60));
+                const validCategories: Array<string> = ['开发', '工作', '学习', '会议', '休息', '娱乐', '运动', '阅读', '其他'];
+                const category = (task.project && validCategories.includes(task.project)) ? task.project : '工作';
+
+                const newBlock: Omit<TimeBlock, 'id'> = {
+                  title: task.title,
+                  startTime: startDate.toISOString(),
+                  endTime: endDate.toISOString(),
+                  durationMinutes,
+                  category: category as any,
+                  date: update.scheduledStartTime.slice(0, 10),
+                  completed: false,
+                  source: 'manual',
+                  taskId: id,
+                };
+                await timeBlockIpc.addTimeBlock(newBlock);
+              }
+            }
+          } else if (update.scheduledEndTime && existingTaskBlocks.length > 0) {
+            // 只有 scheduledEndTime 更新：同步到已有的 block
+            const block = existingTaskBlocks[0];
+            await timeBlockIpc.updateTimeBlock(block.id, {
+              endTime: update.scheduledEndTime,
+              durationMinutes: Math.round(
+                (new Date(update.scheduledEndTime).getTime() - new Date(block.startTime).getTime()) / (1000 * 60)
+              ),
+            });
+          }
+        } catch (err) {
+          // 如果自动创建/更新 time_block 失败，至少要保证任务本身能更新成功
+          console.error('Failed to sync task with time block:', err);
+        }
+      }
       await taskIpc.updateTask(id, update);
     } else {
+      // 🚨 数据一致性（Web 分支）：scheduledStartTime/EndTime 与 time_block 双向同步
+      if (update.scheduledStartTime || update.scheduledEndTime) {
+        const allBlocks = load<TimeBlock[]>(KEYS.timeBlocks, []);
+        const existingTaskBlocks = allBlocks.filter((b) => b.taskId === id);
+
+        if (update.scheduledStartTime) {
+          const newDate = update.scheduledStartTime.slice(0, 10);
+
+          // Step 1: 删除旧日期的所有该任务的 time_block
+          for (const block of existingTaskBlocks) {
+            if (block.startTime.slice(0, 10) !== newDate) {
+              save(KEYS.timeBlocks, allBlocks.filter((b) => b.id !== block.id));
+            }
+          }
+
+          // Step 2: 检查新日期是否已有 block，如果没有则创建
+          const blocksForNewDate = allBlocks.filter((b) => b.startTime.slice(0, 10) === newDate);
+          const hasExistingBlockInNewDate = blocksForNewDate.some((b) => b.taskId === id);
+
+          if (!hasExistingBlockInNewDate) {
+            const allTasks = load<Task[]>(KEYS.tasks, []);
+            const task = allTasks.find((t) => t.id === id);
+            if (task) {
+              const startDate = new Date(update.scheduledStartTime);
+              const endTimeStr = update.scheduledEndTime || task.scheduledEndTime;
+              const endDate = endTimeStr
+                ? new Date(endTimeStr)
+                : new Date(startDate.getTime() + (task.estimatedMinutes || 60) * 60000);
+              const durationMinutes = Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60));
+              const validCategories: Array<string> = ['开发', '工作', '学习', '会议', '休息', '娱乐', '运动', '阅读', '其他'];
+              const category = (task.project && validCategories.includes(task.project)) ? task.project : '工作';
+
+              const newBlock: TimeBlock = {
+                id: uid(),
+                title: task.title,
+                startTime: startDate.toISOString(),
+                endTime: endDate.toISOString(),
+                durationMinutes,
+                category: category as any,
+                date: update.scheduledStartTime.slice(0, 10),
+                completed: false,
+                source: 'manual',
+                taskId: id,
+              };
+              save(KEYS.timeBlocks, [...allBlocks, newBlock]);
+            }
+          }
+        } else if (update.scheduledEndTime && existingTaskBlocks.length > 0) {
+          // 只有 scheduledEndTime 更新：同步到已有的 block
+          const block = existingTaskBlocks[0];
+          const updatedBlocks = allBlocks.map((b) =>
+            b.id === block.id
+              ? {
+                  ...b,
+                  endTime: update.scheduledEndTime!,
+                  durationMinutes: Math.round(
+                    (new Date(update.scheduledEndTime!).getTime() - new Date(b.startTime).getTime()) / (1000 * 60)
+                  ),
+                }
+              : b
+          );
+          save(KEYS.timeBlocks, updatedBlocks);
+        }
+      }
+
       const existing = load<Task[]>(KEYS.tasks, []);
       const idx = existing.findIndex((t) => t.id === id);
       if (idx >= 0) {
@@ -375,17 +539,36 @@ const DataService = {
 
   deleteTask: async (id: string): Promise<void> => {
     if (isDesktop()) {
+      // 🚨 数据一致性：删除任务时，先级联删除所有关联的 time_blocks
+      // 避免删除任务后，Timeline 中还留有指向不存在 taskId 的块
+      try {
+        // 查过去7天 + 未来7天，确保覆盖所有可能有该任务 block 的日期
+        const daysToCheck = getDateRange(7);
+
+        // ✅ 并行查询所有日期，性能优化
+        const allBlocks = await Promise.all(daysToCheck.map(d => timeBlockIpc.getTimeBlocks(d)));
+        const taskBlocks = allBlocks.flat().filter((b: TimeBlock) => b.taskId === id);
+
+        // ✅ keepTaskSchedule = true: 任务本身就要被删除了，不需要再更新任务的 scheduled 字段
+        for (const block of taskBlocks) {
+          // 直接调用 IPC 层删除，options 参数由 dataService 自身处理，不传给 IPC
+          await timeBlockIpc.deleteTimeBlock(block.id);
+        }
+      } catch (err) {
+        console.error('Failed to cascade delete time blocks for task:', err);
+      }
       await taskIpc.deleteTask(id);
     } else {
       // Delete associated time blocks first (cascade delete)
       const allTimeBlocks = load<TimeBlock[]>(KEYS.timeBlocks, []);
-      const taskTimeBlocks = allTimeBlocks.filter((b) => b.taskId === id);
-      for (const block of taskTimeBlocks) {
-        save(
-          KEYS.timeBlocks,
-          allTimeBlocks.filter((b) => b.id !== block.id)
-        );
-      }
+      const taskTimeBlockIds = new Set(allTimeBlocks.filter((b) => b.taskId === id).map(b => b.id));
+
+      // ✅ 只 save 一次，而不是循环中多次 save
+      save(
+        KEYS.timeBlocks,
+        allTimeBlocks.filter((b) => !taskTimeBlockIds.has(b.id))
+      );
+
       // Then delete the task itself
       const existing = load<Task[]>(KEYS.tasks, []);
       save(
@@ -544,21 +727,105 @@ const DataService = {
 
   updateTimeBlock: async (id: string, update: Partial<TimeBlock>): Promise<void> => {
     if (isDesktop()) {
+      // 数据一致性：如果修改了 startTime 或 endTime，且该 block 关联了任务，同步更新任务
+      if (update.startTime || update.endTime) {
+        try {
+          // 需要先查询 block 以获取 taskId（因为如果只改 endTime 我们无法从 update 推断日期）
+          // 先尝试从 update.startTime 查，没有则用当前时间作为基准查当天+前后一天
+          let block: TimeBlock | undefined;
+
+          if (update.startTime) {
+            const date = update.startTime.slice(0, 10);
+            const blocksForDate = await timeBlockIpc.getTimeBlocks(date);
+            block = blocksForDate.find((b: TimeBlock) => b.id === id);
+          } else {
+            // 只有 endTime 更新：查今天，昨天，明天以找到该 block
+            const daysToCheck = getNearbyDays();
+            const allBlocks = await Promise.all(daysToCheck.map(d => timeBlockIpc.getTimeBlocks(d)));
+            block = allBlocks.flat().find((b: TimeBlock) => b.id === id);
+          }
+
+          if (block && block.taskId) {
+            const taskUpdate: Partial<Task> = {};
+            if (update.startTime) {
+              taskUpdate.scheduledStartTime = update.startTime;
+              taskUpdate.scheduledDate = update.startTime.slice(0, 10);
+            }
+            if (update.endTime) {
+              taskUpdate.scheduledEndTime = update.endTime;
+            }
+            await taskIpc.updateTask(block.taskId, taskUpdate);
+          }
+        } catch (err) {
+          console.error('Failed to sync task scheduled time:', err);
+        }
+      }
       await timeBlockIpc.updateTimeBlock(id, update);
     } else {
-      const existing = load<TimeBlock[]>(KEYS.timeBlocks, []);
-      const idx = existing.findIndex((b) => b.id === id);
+      const existingBlocks = load<TimeBlock[]>(KEYS.timeBlocks, []);
+      const idx = existingBlocks.findIndex((b) => b.id === id);
       if (idx >= 0) {
-        existing[idx] = { ...existing[idx], ...update };
-        save(KEYS.timeBlocks, existing);
+        // 🚨 数据一致性（Web 分支）：如果修改了 startTime 或 endTime，且该 block 关联了任务，同步更新任务
+        if ((update.startTime || update.endTime) && existingBlocks[idx].taskId) {
+          const existingTasks = load<Task[]>(KEYS.tasks, []);
+          const taskIdx = existingTasks.findIndex((t) => t.id === existingBlocks[idx].taskId);
+          if (taskIdx >= 0) {
+            if (update.startTime) {
+              existingTasks[taskIdx] = {
+                ...existingTasks[taskIdx],
+                scheduledStartTime: update.startTime,
+                scheduledDate: update.startTime.slice(0, 10),
+              };
+            }
+            if (update.endTime) {
+              existingTasks[taskIdx] = {
+                ...existingTasks[taskIdx],
+                scheduledEndTime: update.endTime,
+              };
+            }
+            save(KEYS.tasks, existingTasks);
+          }
+        }
+        existingBlocks[idx] = { ...existingBlocks[idx], ...update };
+        save(KEYS.timeBlocks, existingBlocks);
       }
     }
   },
 
-  deleteTimeBlock: async (id: string): Promise<void> => {
+  deleteTimeBlock: async (
+    id: string,
+    options?: { taskId?: string; keepTaskSchedule?: boolean }
+  ): Promise<void> => {
     if (isDesktop()) {
+      // 🚨 数据一致性：如果有关联的任务且不是分割/合并操作，清除其 scheduled 字段
+      // keepTaskSchedule = true 用于分割/合并等内部操作，此时只是重建 block 而不是真正解除任务排期
+      if (options?.taskId && !options?.keepTaskSchedule) {
+        try {
+          await taskIpc.updateTask(options.taskId, {
+            scheduledStartTime: undefined,
+            scheduledEndTime: undefined,
+            scheduledDate: undefined,
+          } as any);
+        } catch (err) {
+          console.error('Failed to clear task scheduled time:', err);
+        }
+      }
       await timeBlockIpc.deleteTimeBlock(id);
     } else {
+      // 🚨 数据一致性（Web 分支）：如果有关联的任务且不是分割/合并操作，清除其 scheduled 字段
+      if (options?.taskId && !options?.keepTaskSchedule) {
+        const existingTasks = load<Task[]>(KEYS.tasks, []);
+        const taskIdx = existingTasks.findIndex((t) => t.id === options.taskId);
+        if (taskIdx >= 0) {
+          existingTasks[taskIdx] = {
+            ...existingTasks[taskIdx],
+            scheduledStartTime: undefined,
+            scheduledEndTime: undefined,
+            scheduledDate: undefined,
+          };
+          save(KEYS.tasks, existingTasks);
+        }
+      }
       const existing = load<TimeBlock[]>(KEYS.timeBlocks, []);
       save(
         KEYS.timeBlocks,

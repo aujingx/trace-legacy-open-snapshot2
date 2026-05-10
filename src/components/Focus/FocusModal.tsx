@@ -149,17 +149,17 @@ export default function FocusModal({
   // 暂停
   const handlePause = () => {
     pauseFocus();
-    addToast('info', '已暂停专注');
+    addToast('info', '专注已暂停');
   };
 
-  // 重置/放弃
+  // 结束专注
   const handleReset = () => {
     const totalMinutes = Math.round((focusSettings.workMinutes * 60 - focusTimeLeft) / 60);
     resetFocus();
     if (isWorking && totalMinutes > 0) {
-      addToast('info', `已放弃专注，累计 ${totalMinutes} 分钟`);
+      addToast('info', `已结束专注，累计 ${totalMinutes} 分钟`);
     } else {
-      addToast('info', '已重置计时器');
+      addToast('info', '已结束专注');
     }
   };
 
@@ -455,7 +455,7 @@ export default function FocusModal({
                 }}
               >
                 <RotateCcw size={18} />
-                放弃
+                结束专注
               </button>
             </>
           ) : isBreak || isLongBreak ? (
@@ -477,7 +477,7 @@ export default function FocusModal({
                 }}
               >
                 <RotateCcw size={18} />
-                结束
+                结束休息
               </button>
             </>
           ) : (

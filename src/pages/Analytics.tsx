@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Clock, Calendar, TrendingUp, PieChart, Sparkles, Download, BarChart3 } from 'lucide-react';
-import { useAppStore } from '../store/useAppStore';
+import dataService from '../services/dataService';
+import type { Activity } from '../services/dataService';
 import EmptyState from '../components/ui/EmptyState';
 import { useToast } from '../components/ui/Toast';
 
@@ -90,15 +91,30 @@ function TrendBarChart({ daily }: { daily: Record<string, number> }) {
 }
 
 export default function Analytics() {
-  const activities = useAppStore((s) => s.activities);
-  const loadActivities = useAppStore((s) => s.loadActivities);
+  const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState<'week' | 'month'>('week');
   const { toast } = useToast();
 
   useEffect(() => {
-    loadActivities().finally(() => setLoading(false));
-  }, [loadActivities]);
+    const loadRange = async () => {
+      setLoading(true);
+      const now = new Date();
+      const daysBack = period === 'week' ? 7 : 30;
+      const start = new Date(now.getTime() - daysBack * 24 * 60 * 60 * 1000);
+      const startStr = start.toISOString().slice(0, 10);
+      const endStr = now.toISOString().slice(0, 10);
+
+      try {
+        const nextActivities = await dataService.getActivitiesRange(startStr, endStr);
+        setActivities(nextActivities);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadRange();
+  }, [period]);
 
   // Calculate period statistics
   const periodStats = useMemo(() => {

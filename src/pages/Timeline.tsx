@@ -5,16 +5,15 @@ import {
   ChevronDown,
   Trash2,
   Plus,
-  Play,
   CheckCircle2,
   Scissors,
   Merge,
-  CalendarOff,
   Edit,
 } from 'lucide-react';
 import dataService from '../services/dataService';
-import type { TimeBlock, Task } from '../services/dataService';
+import type { TimeBlock, Task, Activity } from '../services/dataService';
 import { useToastFeedback } from '../hooks/useToastFeedback';
+import * as activityIpc from '../services/ipc/activityIpc';
 import ConfirmDialog from '../components/ConfirmDialog';
 import DetailPanel from '../components/DetailPanel';
 import ContextCard from '../components/ContextCard';
@@ -100,7 +99,9 @@ export default function Timeline() {
   // Infinite scroll - visible date range
   const [visibleDays, setVisibleDays] = useState<Date[]>([]);
   const [loadedBlocks, setLoadedBlocks] = useState<Map<string, TimeBlock[]>>(new Map());
+  const [loadedActivities, setLoadedActivities] = useState<Map<string, Activity[]>>(new Map());
   const [loadingDays, setLoadingDays] = useState<Set<string>>(new Set());
+  const [selectedActivityId, setSelectedActivityId] = useState<string | null>(null);
 
   const [selectedBlock, setSelectedBlock] = useState<TimeBlock | null>(null);
   const [selectedBlockIds, setSelectedBlockIds] = useState<Set<string>>(new Set());
@@ -147,8 +148,6 @@ export default function Timeline() {
   const [showContextMenu, setShowContextMenu] = useState(false);
   const [contextMenuPos, setContextMenuPos] = useState({ x: 0, y: 0 });
   const [contextMenuBlock, setContextMenuBlock] = useState<TimeBlock | null>(null);
-  const [showPlannedTaskContextMenu, setShowPlannedTaskContextMenu] = useState(false);
-  const [contextMenuPlannedTask, setContextMenuPlannedTask] = useState<Task | null>(null);
 
   // 今日成就聚合
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
@@ -240,7 +239,7 @@ export default function Timeline() {
     }, 100);
   }, []);
 
-  // Load time blocks for visible days
+  // Load time blocks and activities for visible days
   const loadDayBlocks = useCallback(
     async (date: Date, force: boolean = false) => {
       const dateStr = formatDateYMD(date);
@@ -248,15 +247,25 @@ export default function Timeline() {
 
       setLoadingDays((prev) => new Set([...prev, dateStr]));
       try {
-        const blocks = await dataService.getTimeBlocks(dateStr);
+        // Load both time blocks AND auto-tracked activities
+        const [blocks, activities] = await Promise.all([
+          dataService.getTimeBlocks(dateStr),
+          dataService.getActivities(dateStr),
+        ]);
 
         setLoadedBlocks((prev) => {
           const next = new Map(prev);
           next.set(dateStr, blocks);
           return next;
         });
+
+        setLoadedActivities((prev) => {
+          const next = new Map(prev);
+          next.set(dateStr, activities);
+          return next;
+        });
       } catch (err) {
-        console.error('Failed to load time blocks:', err);
+        console.error('Failed to load timeline data:', err);
       } finally {
         setLoadingDays((prev) => {
           const next = new Set(prev);
@@ -265,7 +274,7 @@ export default function Timeline() {
         });
       }
     },
-    [loadedBlocks, loadingDays]
+    [loadedBlocks, loadedActivities, loadingDays]
   );
 
   useEffect(() => {
@@ -574,23 +583,34 @@ export default function Timeline() {
       const block1Duration = Math.round((mid.getTime() - start) / (1000 * 60));
       const block2Duration = Math.round((end - mid.getTime()) / (1000 * 60));
 
-      await dataService.deleteTimeBlock(block.id);
+      // keepTaskSchedule = true: 分割操作只是重建块，不解除任务排期关联
+      await dataService.deleteTimeBlock(block.id, { taskId: block.taskId, keepTaskSchedule: true });
 
       // 解构掉 id，使用剩余属性创建新块
       const { id: _, ...blockWithoutId } = block;
 
-      await dataService.addTimeBlock({
+      // 第一个块继承原块的 taskId（保持任务关联）
+      const newBlock1 = await dataService.addTimeBlock({
         ...blockWithoutId,
         endTime: mid.toISOString(),
         durationMinutes: block1Duration,
       });
 
+      // 第二个块不关联任务（避免一个任务对应多个块）
       await dataService.addTimeBlock({
         ...blockWithoutId,
         title: `${block.title} (2)`,
         startTime: mid.toISOString(),
         durationMinutes: block2Duration,
+        taskId: undefined,
       });
+
+      // ✅ 数据一致性：分割后第一个块的 endTime 变了，反向同步到任务
+      if (block.taskId && newBlock1.endTime !== block.endTime) {
+        await dataService.updateTask(block.taskId, {
+          scheduledEndTime: newBlock1.endTime,
+        });
+      }
 
       const dateStr = block.startTime.slice(0, 10);
       setLoadedBlocks((prev) => {
@@ -637,19 +657,34 @@ export default function Timeline() {
       const minStart = Math.min(...allToMerge.map((b) => new Date(b.startTime).getTime()));
       const maxEnd = Math.max(...allToMerge.map((b) => new Date(b.endTime).getTime()));
 
+      // 保留第一个有任务关联的块的 taskId（如果有的话），其他块解除任务关联
+      const firstTaskBlock = allToMerge.find((b) => b.taskId);
       for (const b of allToMerge) {
-        await dataService.deleteTimeBlock(b.id);
+        // keepTaskSchedule = true 只对第一个块（我们要保留关联的块）
+        // 其他块需要真正解除关联，所以 keepTaskSchedule = false
+        const keepTaskSchedule = firstTaskBlock && b.id === firstTaskBlock.id;
+        await dataService.deleteTimeBlock(b.id, { taskId: b.taskId, keepTaskSchedule });
       }
 
       const totalDuration = Math.round((maxEnd - minStart) / (1000 * 60));
       const { id: _, ...blockWithoutId } = block;
-      await dataService.addTimeBlock({
+      const mergedBlock = await dataService.addTimeBlock({
         ...blockWithoutId,
         startTime: new Date(minStart).toISOString(),
         endTime: new Date(maxEnd).toISOString(),
         durationMinutes: totalDuration,
         source: 'confirmed',
+        // 继承第一个有任务关联的块的 taskId
+        taskId: firstTaskBlock?.taskId,
       });
+
+      // ✅ 数据一致性：合并后块的时间变了，反向同步到任务
+      if (firstTaskBlock?.taskId) {
+        await dataService.updateTask(firstTaskBlock.taskId, {
+          scheduledStartTime: mergedBlock.startTime,
+          scheduledEndTime: mergedBlock.endTime,
+        });
+      }
 
       setLoadedBlocks((prev) => {
         const next = new Map(prev);
@@ -677,9 +712,8 @@ export default function Timeline() {
   useEffect(() => {
     const closeMenus = () => {
       setShowContextMenu(false);
-      setShowPlannedTaskContextMenu(false);
     };
-    if (showContextMenu || showPlannedTaskContextMenu) {
+    if (showContextMenu) {
       document.addEventListener('click', closeMenus);
       document.addEventListener('contextmenu', closeMenus); // 右键也关闭
     }
@@ -687,7 +721,7 @@ export default function Timeline() {
       document.removeEventListener('click', closeMenus);
       document.removeEventListener('contextmenu', closeMenus);
     };
-  }, [showContextMenu, showPlannedTaskContextMenu]);
+  }, [showContextMenu]);
 
   // 键盘 Delete 键删除
   useEffect(() => {
@@ -723,7 +757,7 @@ export default function Timeline() {
           .find((b) => b.id === blockId);
 
         if (block) {
-          await dataService.deleteTimeBlock(blockId);
+          await dataService.deleteTimeBlock(blockId, { taskId: block.taskId });
           datesToReload.add(block.startTime.slice(0, 10));
           deletedTitles.push(block.title);
         }
@@ -748,7 +782,7 @@ export default function Timeline() {
     if (!block) return;
     try {
       const dateStr = block.startTime.slice(0, 10);
-      await dataService.deleteTimeBlock(block.id);
+      await dataService.deleteTimeBlock(block.id, { taskId: block.taskId });
 
       setLoadedBlocks((prev) => {
         const next = new Map(prev);
@@ -1047,6 +1081,104 @@ export default function Timeline() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showCalendar]);
 
+  // 🎯 P1: 统一 Timeline 前台任务条模型收敛
+  // 自动将有计划时间但没有对应 time_block 的任务转换为真实的 time_block
+  // 这样任务进入 Timeline 后统一到 time_block 语义下
+  //
+  // 🚨 P0 风险修复：不能基于 loadedBlocks（内存缓存）判断，必须查询真实数据源
+  useEffect(() => {
+    if (tasks.length === 0) return;
+
+    // 第一步：筛选候选任务（基本条件过滤，不依赖 loadedBlocks）
+    const candidateTasks = tasks.filter((task) => {
+      if (task.status === 'completed') return false;
+      if (!task.scheduledStartTime) return false;
+      return true;
+    });
+
+    if (candidateTasks.length === 0) return;
+
+    let isMounted = true;
+    const validCategories: Array<string> = ['开发', '工作', '学习', '会议', '休息', '娱乐', '运动', '阅读', '其他'];
+
+    // 第二步：基于真实数据源判断，避免重复创建
+    (async () => {
+      try {
+        // 获取所有候选任务涉及的日期
+        const datesToCheck = [...new Set(
+          candidateTasks.map((t) => t.scheduledStartTime!.slice(0, 10))
+        )];
+
+        // ✅ 关键：并行查询真实数据源，获取这些日期的所有 time_blocks
+        // 不依赖 loadedBlocks（内存缓存），直接从数据库获取全局真相
+        const allBlocksForDates = await Promise.all(
+          datesToCheck.map((date) => dataService.getTimeBlocks(date))
+        );
+
+        if (!isMounted) return;
+
+        // 基于真实数据构建已有 taskId 集合
+        const realTaskIdsWithBlocks = new Set<string>(
+          allBlocksForDates
+            .flat()
+            .map((b) => b.taskId)
+            .filter((id): id is string => !!id)
+        );
+
+        // 第三步：基于真实数据源过滤，只创建确实没有的
+        const tasksReallyNeedConvert = candidateTasks.filter(
+          (t) => !realTaskIdsWithBlocks.has(t.id)
+        );
+
+        if (tasksReallyNeedConvert.length === 0) return;
+
+        // 第四步：批量创建
+        const createdBlocks = await Promise.all(
+          tasksReallyNeedConvert.map(async (task) => {
+            const startDate = new Date(task.scheduledStartTime!);
+            const endDate = new Date(startDate.getTime() + (task.estimatedMinutes || 60) * 60000);
+            const category = (task.project && validCategories.includes(task.project))
+              ? task.project
+              : '工作';
+
+            const newBlock: Omit<TimeBlock, 'id'> = {
+              title: task.title,
+              startTime: startDate.toISOString(),
+              endTime: endDate.toISOString(),
+              durationMinutes: task.estimatedMinutes || 60,
+              category: category as any,
+              date: task.scheduledStartTime!.slice(0, 10),
+              completed: false,
+              source: 'manual',
+              taskId: task.id,
+            };
+
+            return dataService.addTimeBlock(newBlock);
+          })
+        );
+
+        if (!isMounted) return;
+
+        // 创建完成后，更新这些日期的本地缓存
+        const affectedDates = [...new Set(createdBlocks.map((b) => b.date))];
+        for (const date of affectedDates) {
+          const blocks = await dataService.getTimeBlocks(date);
+          setLoadedBlocks((prev) => {
+            const next = new Map(prev);
+            next.set(date, blocks);
+            return next;
+          });
+        }
+      } catch (err) {
+        console.error('Failed to auto-convert tasks to time blocks:', err);
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [tasks]); // 只监听 tasks 变化，loadedBlocks 不参与依赖
+
   // ⌨️ 键盘快捷键支持 - Optimization #4
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -1105,10 +1237,6 @@ export default function Timeline() {
             setShowContextMenu(false);
             setContextMenuBlock(null);
           }
-          if (showPlannedTaskContextMenu) {
-            setShowPlannedTaskContextMenu(false);
-            setContextMenuPlannedTask(null);
-          }
           break;
       }
     };
@@ -1121,7 +1249,6 @@ export default function Timeline() {
     isAdding,
     showCalendar,
     showContextMenu,
-    showPlannedTaskContextMenu,
   ]);
 
   // 智能上下文卡片状态判断
@@ -1447,6 +1574,7 @@ export default function Timeline() {
           {visibleDays.map((day, dayIndex) => {
             const dateStr = formatDateYMD(day);
             const blocks = loadedBlocks.get(dateStr) || [];
+            const activities = loadedActivities.get(dateStr) || [];
             const isToday = dateStr === formatDateYMD(new Date());
             const isSelected = dateStr === formatDateYMD(selectedDate);
 
@@ -1675,94 +1803,115 @@ export default function Timeline() {
                   </div>
                 )}
 
-                {/* Planned Tasks (from Tasks that have scheduled time) */}
+                {/* Auto-tracked Activities (background layer - clickable to view details) */}
                 {(() => {
-                  // 筛选: 有计划时间的任务，并且时间在这一天
-                  // 🎯 关键修复：排除已经有对应时间块的任务（避免重复渲染）
-                  const taskIdsWithBlocks = new Set(blocks.map((b) => b.taskId).filter(Boolean));
+                  const blocks = loadedBlocks.get(dateStr) || [];
 
-                  const plannedTasksForDay = tasks.filter((task) => {
-                    if (task.status === 'completed') return false;
-                    if (!task.scheduledStartTime) return false;
-                    if (taskIdsWithBlocks.has(task.id)) return false; // 已经有时间块了，不重复渲染
-                    const taskDate = task.scheduledStartTime.slice(0, 10);
-                    return taskDate === dateStr;
-                  });
+                  const checkOverlap = (activity: Activity): boolean => {
+                    const activityStart = new Date(activity.startTime).getTime();
+                    const activityEnd = activityStart + (activity.duration || 0) * 60000;
 
-                  return plannedTasksForDay.map((task) => {
-                    const startHour = timeToHour(task.scheduledStartTime!);
-                    const durationHours = (task.estimatedMinutes || 60) / 60;
-                    const endHour = Math.min(startHour + durationHours, END_HOUR);
-                    const top = hourToPx(startHour); // 🎯 在 day 容器内部，不需要 dayIndex
+                    for (const block of blocks) {
+                      const blockStart = new Date(block.startTime).getTime();
+                      const blockEnd = new Date(block.endTime).getTime();
+                      if (activityStart < blockEnd && activityEnd > blockStart) {
+                        return true;
+                      }
+                    }
+                    return false;
+                  };
+
+                  return activities.map((activity) => {
+                    const startHour = timeToHour(activity.startTime);
+                    const endHour = startHour + (activity.duration || 0) / 60;
+                    const top = hourToPx(startHour);
                     const height = hourToPx(endHour) - hourToPx(startHour);
+                    const isSelected = selectedActivityId === activity.id;
+                    const hasOverlap = checkOverlap(activity);
 
-                    // 任务的优先级颜色
-                    const priorityColor =
-                      task.priority >= 4
-                        ? '#F87171'
-                        : task.priority >= 3
-                          ? 'var(--color-purple)'
-                          : 'var(--color-blue)';
+                    // Skip very short activities to avoid clutter
+                    if (height < 8) return null;
+
+                    const color = CATEGORY_COLORS[activity.category] || CATEGORY_COLORS['其他'];
+                    const linkedTask = activity.taskId ? tasks.find((t) => t.id === activity.taskId) : null;
 
                     return (
                       <div
-                        key={`planned-${task.id}`}
-                        className="absolute rounded-xl cursor-pointer transition-all z-10 hover:shadow-md hover:scale-[1.005]"
+                        key={`activity-${activity.id}`}
+                        className="absolute rounded-md cursor-pointer transition-all duration-150"
                         style={{
                           top: Math.max(0, top),
-                          height: Math.max(30, height),
-                          left: 'calc(48px + 2%)',
-                          right: 'calc(12px + 2%)',
-                          background: `repeating-linear-gradient(
-                            45deg,
-                            ${priorityColor}30,
-                            ${priorityColor}30 8px,
-                            ${priorityColor}20 8px,
-                            ${priorityColor}20 16px
-                          )`,
-                          border: `2px dashed ${priorityColor}`,
-                          boxShadow: 'none',
+                          height: Math.max(4, height),
+                          left: 'calc(48px + 1%)',
+                          right: 'calc(12px + 50%)',
+                          background: isSelected
+                            ? hasOverlap
+                              ? 'repeating-linear-gradient(45deg, rgba(251, 146, 60, 0.3), rgba(251, 146, 60, 0.3) 4px, rgba(251, 146, 60, 0.15) 4px, rgba(251, 146, 60, 0.15) 8px)'
+                              : `${color}50`
+                            : hasOverlap
+                              ? 'repeating-linear-gradient(45deg, rgba(251, 146, 60, 0.2), rgba(251, 146, 60, 0.2) 4px, rgba(251, 146, 60, 0.1) 4px, rgba(251, 146, 60, 0.1) 8px)'
+                              : `${color}30`,
+                          borderLeft: linkedTask
+                            ? `4px solid var(--color-accent)`
+                            : isSelected
+                              ? `4px solid ${color}`
+                              : `3px solid ${color}`,
+                          borderRight: hasOverlap ? `3px solid #f97316` : undefined,
+                          opacity: isSelected ? 1 : 0.6,
+                          zIndex: isSelected ? 5 : 1,
+                          boxShadow: isSelected ? `0 2px 8px ${color}40` : 'none',
                         }}
                         onClick={(e) => {
                           e.stopPropagation();
-                          // 点击计划任务可以开始专注
-                          startFocusSession(task);
-                        }}
-                        onContextMenu={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setContextMenuPlannedTask(task);
-                          setContextMenuPos({ x: e.clientX, y: e.clientY });
-                          setShowPlannedTaskContextMenu(true);
+                          setSelectedActivityId(isSelected ? null : activity.id);
+                          if (!isSelected) {
+                            const startTime = activity.startTime.slice(11, 16);
+                            const startHour = parseInt(startTime.slice(0, 2));
+                            const startMin = parseInt(startTime.slice(3));
+                            const endMinutes = startHour * 60 + startMin + (activity.duration || 0);
+                            const endHour = Math.floor(endMinutes / 60) % 24;
+                            const endMin = Math.floor(endMinutes % 60);
+                            const endTime = `${String(endHour).padStart(2, '0')}:${String(endMin).padStart(2, '0')}`;
+
+                            const lines: string[] = [];
+                            lines.push('📋 活动详情');
+                            lines.push('────────');
+                            lines.push(`窗口: ${activity.name || activity.category}`);
+                            lines.push(`分类: ${activity.category}`);
+                            lines.push(`时间: ${startTime} - ${endTime}`);
+                            lines.push(`时长: ${activity.duration?.toFixed(1)} 分钟`);
+                            if (linkedTask) {
+                              lines.push('────────');
+                              lines.push(`📎 关联任务: ${linkedTask.title}`);
+                              const priorityText: Record<number, string> = { 1: '🔴 最高', 2: '🟠 高', 3: '🟡 中', 4: '🟢 低', 5: '🔵 最低' };
+                              lines.push(`优先级: ${priorityText[linkedTask.priority] || linkedTask.priority}`);
+                              if (linkedTask.status) {
+                                const statusText: Record<string, string> = { todo: '📝 待办', 'in-progress': '🔄 进行中', paused: '⏸️ 暂停', completed: '✅ 已完成', archived: '📦 归档' };
+                                lines.push(`状态: ${statusText[linkedTask.status] || linkedTask.status}`);
+                              }
+                            }
+                            info(lines.join('\n'));
+                          }
                         }}
                       >
-                        <div className="px-4 py-2 h-full overflow-hidden flex flex-col justify-center">
-                          <p
-                            className="text-sm font-semibold truncate drop-shadow-sm"
-                            style={{ color: 'var(--color-text-primary)' }}
+                        {height > 28 && (
+                          <span
+                            className="text-[10px] px-1 truncate flex items-center"
+                            style={{ color, fontWeight: isSelected ? 600 : 400 }}
                           >
-                            {task.title}
-                          </p>
-                          <div className="flex items-center gap-1 flex-wrap">
-                            <p className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
-                              {task.project || '未分类'}
-                            </p>
-                            <span
-                              className="text-xs px-1.5 py-0.5 rounded-md font-medium"
-                              style={{ background: `${priorityColor}40`, color: priorityColor }}
-                            >
-                              TASK
-                            </span>
-                            {task.priority >= 4 && (
-                              <span
-                                className="text-xs px-1.5 py-0.5 rounded-md font-medium"
-                                style={{ background: 'rgba(248, 113, 113, 0.2)', color: '#F87171' }}
-                              >
-                                🔥 HIGH
-                              </span>
-                            )}
-                          </div>
-                        </div>
+                            {activity.name || activity.category}
+                            {linkedTask && <span className="ml-1">📎</span>}
+                            {hasOverlap && <span className="ml-1" title="与时间块重叠">⚠️</span>}
+                          </span>
+                        )}
+                        {height <= 28 && height > 16 && hasOverlap && (
+                          <span
+                            className="absolute right-1 top-1/2 -translate-y-1/2 text-[8px]"
+                            title="与时间块重叠"
+                          >
+                            ⚠️
+                          </span>
+                        )}
                       </div>
                     );
                   });
@@ -1856,6 +2005,7 @@ export default function Timeline() {
                                   {
                                     background: color,
                                     border: `2px solid ${color}`,
+                                    ...(block.taskId ? { borderLeft: '4px solid #3b82f6' } : {}),
                                   }
                                 : showAutoStyle
                                   ? // 2. 🔍 未确认 AUTO: 斜线纹理背景 + 2px 虚线边框
@@ -1868,11 +2018,13 @@ export default function Timeline() {
                                       ${color}30 8px
                                     )`,
                                       border: `2px dashed ${color}`,
+                                      ...(block.taskId ? { borderLeft: '4px solid #3b82f6' } : {}),
                                     }
                                   : // 3. ✓ 已确认 confirmed: 浅灰色背景 + 4px 加粗彩色实线边框
                                     {
                                       background: 'rgba(120, 120, 120, 0.25)',
                                       border: `4px solid ${color}`,
+                                      ...(block.taskId ? { borderLeft: '4px solid #3b82f6' } : {}),
                                     }),
                               opacity: 1,
                               boxShadow: isBlockSelected
@@ -2009,18 +2161,39 @@ export default function Timeline() {
                               </p>
                             )}
 
-                            {/* 2. 分类标签 - 自适应文字长度的圆角背景框 */}
-                            <span
-                              className="inline-flex px-2 py-0.5 rounded-full w-fit"
-                              style={{
-                                background: `${color}40`,
-                                color: 'var(--color-text-primary)',
-                                fontSize: '10px',
-                                lineHeight: '14px',
-                              }}
-                            >
-                              {block.category}
-                            </span>
+                            {/* 2. 分类标签 + 任务关联标识 - 自适应文字长度的圆角背景框 */}
+                            <div className="flex items-center gap-2">
+                              <span
+                                className="inline-flex px-2 py-0.5 rounded-full w-fit"
+                                style={{
+                                  background: `${color}40`,
+                                  color: 'var(--color-text-primary)',
+                                  fontSize: '10px',
+                                  lineHeight: '14px',
+                                }}
+                              >
+                                {block.category}
+                              </span>
+                              {block.taskId && (() => {
+                                const linkedTask = tasks.find((t) => t.id === block.taskId);
+                                return linkedTask ? (
+                                  <span
+                                    className="inline-flex items-center px-2 py-0.5 rounded-full"
+                                    style={{
+                                      background: 'rgba(59, 130, 246, 0.2)',
+                                      color: 'var(--color-text-primary)',
+                                      fontSize: '10px',
+                                      lineHeight: '14px',
+                                    }}
+                                    title={`关联任务: ${linkedTask.title}`}
+                                  >
+                                    📎 {linkedTask.title.length > 8 ? linkedTask.title.slice(0, 8) + '...' : linkedTask.title}
+                                  </span>
+                                ) : (
+                                  <span className="text-xs">📎</span>
+                                );
+                              })()}
+                            </div>
 
                             {/* 3. 状态标签 */}
                             {showStatusTags && isFuture && (
@@ -2091,6 +2264,61 @@ export default function Timeline() {
             </div>
           )}
         </div>
+
+        {/* ============================================
+            🎯 选中自动追踪活动时的操作栏
+            ============================================ */}
+        {selectedActivityId && (
+          <div
+            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-6 py-3 rounded-2xl flex items-center gap-4"
+            style={{
+              background: 'var(--color-bg-surface-1)',
+              border: '2px solid var(--color-accent)',
+              boxShadow: '8px 8px 0px rgba(0,0,0,0.1)',
+            }}
+          >
+            <span className="text-sm font-medium" style={{ color: 'var(--color-text-secondary)' }}>
+              📎 选中活动 - 关联到任务
+            </span>
+            <select
+              className="px-3 py-1.5 rounded-lg text-sm border border-gray-200"
+              style={{ minWidth: '180px' }}
+              onChange={async (e) => {
+                const taskId = e.target.value;
+                if (taskId) {
+                  try {
+                    await activityIpc.matchActivityToTask(selectedActivityId, taskId);
+                    success('已关联到任务');
+                    // 重新加载活动数据
+                    const dateStr = formatDateYMD(selectedDate);
+                    const blocks = await dataService.getTimeBlocks(dateStr);
+                    const activities = await dataService.getActivities(dateStr);
+                    setLoadedBlocks(new Map([[dateStr, blocks]]));
+                    setLoadedActivities(new Map([[dateStr, activities]]));
+                    setSelectedActivityId(null);
+                  } catch (err) {
+                    error('关联失败');
+                  }
+                }
+                e.target.value = '';
+              }}
+            >
+              <option value="">选择任务...</option>
+              {tasks.slice(0, 15).map((task) => (
+                <option key={task.id} value={task.id}>
+                  {task.title}
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={() => setSelectedActivityId(null)}
+              className="px-3 py-1.5 rounded-lg text-sm font-medium transition-all hover:bg-gray-100"
+              style={{ color: 'var(--color-text-muted)' }}
+            >
+              取消
+            </button>
+          </div>
+        )}
 
         {/* ============================================
             📋 底部批量操作栏 - 选中块时显示
@@ -2628,53 +2856,6 @@ export default function Timeline() {
           >
             <Trash2 size={14} />
             删除
-          </button>
-        </div>
-      )}
-
-      {/* Planned Task Context Menu */}
-      {showPlannedTaskContextMenu && contextMenuPlannedTask && (
-        <div
-          className="fixed z-50 rounded-xl py-2"
-          style={{
-            left: contextMenuPos.x,
-            top: contextMenuPos.y,
-            background: 'var(--color-bg-surface-1)',
-            border: '2px solid var(--color-border-strong)',
-            boxShadow: '8px 8px 0px rgba(0,0,0,0.1)',
-            minWidth: 180,
-          }}
-        >
-          <button
-            onClick={() => {
-              startFocusSession(contextMenuPlannedTask);
-              setShowPlannedTaskContextMenu(false);
-            }}
-            className="w-full px-4 py-2.5 text-left text-sm transition-all hover:bg-gray-50 flex items-center gap-2"
-            style={{ color: 'var(--color-text-primary)' }}
-          >
-            <Play size={14} style={{ color: '#34D399' }} />
-            开始专注
-          </button>
-          <button
-            onClick={async () => {
-              try {
-                await dataService.updateTask(contextMenuPlannedTask.id, {
-                  scheduledStartTime: undefined,
-                  scheduledDate: undefined,
-                });
-                setShowPlannedTaskContextMenu(false);
-                success('已取消安排');
-              } catch (err) {
-                console.error('Failed to unschedule task:', err);
-                error('取消安排失败');
-              }
-            }}
-            className="w-full px-4 py-2.5 text-left text-sm transition-all hover:bg-gray-50 flex items-center gap-2"
-            style={{ color: 'var(--color-text-primary)' }}
-          >
-            <CalendarOff size={14} style={{ color: 'var(--color-blue)' }} />
-            取消安排
           </button>
         </div>
       )}

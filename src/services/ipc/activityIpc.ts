@@ -11,6 +11,22 @@ export function isDesktop(): boolean {
   return typeof window !== 'undefined' && '__TAURI__' in window;
 }
 
+function enumerateDates(startDate: string, endDate: string): string[] {
+  const result: string[] = [];
+  const cursor = new Date(`${startDate}T00:00:00`);
+  const end = new Date(`${endDate}T00:00:00`);
+
+  while (cursor <= end) {
+    const y = cursor.getFullYear();
+    const m = String(cursor.getMonth() + 1).padStart(2, '0');
+    const d = String(cursor.getDate()).padStart(2, '0');
+    result.push(`${y}-${m}-${d}`);
+    cursor.setDate(cursor.getDate() + 1);
+  }
+
+  return result;
+}
+
 // Backend Activity structure (from Rust)
 interface BackendActivity {
   id: string;
@@ -37,6 +53,7 @@ function toFrontendActivity(backend: BackendActivity): Activity {
     isManual: false,
     isAiClassified: !!backend.category,
     aiApproved: backend.category ? null : null,
+    taskId: backend.task_id || undefined,
   };
 }
 
@@ -73,21 +90,20 @@ export async function getActivities(date: string): Promise<Activity[]> {
   if (!isDesktop()) {
     throw new Error('Not in desktop environment');
   }
-  const result = await invoke<BackendActivity[]>('get_activities_by_date', { date });
+  const result = await invoke<BackendActivity[]>('get_activities_by_date', { dateStr: date });
   return result.map(toFrontendActivity);
 }
 
 /**
  * Get activities in date range
  */
-export async function getActivitiesRange(startDate: string, _endDate: string): Promise<Activity[]> {
+export async function getActivitiesRange(startDate: string, endDate: string): Promise<Activity[]> {
   if (!isDesktop()) {
     throw new Error('Not in desktop environment');
   }
-  // Backend doesn't have this command, fetch by date for now
-  // In a real implementation, we would add this command to the backend
-  const result = await getActivities(startDate);
-  return result;
+  const dates = enumerateDates(startDate, endDate);
+  const results = await Promise.all(dates.map((date) => getActivities(date)));
+  return results.flat();
 }
 
 /**
@@ -161,6 +177,16 @@ export async function updateActivityCategory(id: string, category: string): Prom
 }
 
 /**
+ * Manually match an activity to a task
+ */
+export async function matchActivityToTask(activityId: string, taskId: string): Promise<void> {
+  if (!isDesktop()) {
+    throw new Error('Not in desktop environment');
+  }
+  await invoke('match_activity_to_task', { activity_id: activityId, task_id: taskId });
+}
+
+/**
  * Get daily statistics
  */
 export async function getDailyStats(date: string): Promise<{
@@ -174,13 +200,16 @@ export async function getDailyStats(date: string): Promise<{
     total_focus_minutes: number;
     total_categories: number;
     top_category: string;
-  }>('get_daily_stats_by_date', { date });
+  }>('get_daily_stats_by_date', { dateStr: date });
+  const activities = await getActivities(date);
+  const categories: Record<string, number> = {};
+  activities.forEach((activity) => {
+    categories[activity.category] = (categories[activity.category] || 0) + activity.duration;
+  });
 
-  // Backend DailyStats doesn't have category breakdown, return simplified version
-  // In a real implementation, we would fetch activities and calculate categories
   return {
     totalMinutes: stats.total_focus_minutes,
-    categories: {},
+    categories,
   };
 }
 
@@ -227,5 +256,5 @@ export async function classifyActivity(appName: string, windowTitle: string): Pr
   if (!isDesktop()) {
     throw new Error('Not in desktop environment');
   }
-  return invoke<string>('classify_activity', { appName, windowTitle });
+  return invoke<string>('classify_activity', { app_name: appName, window_title: windowTitle });
 }

@@ -155,6 +155,7 @@ export interface AppState {
   focusTimeLeft: number;
   focusSessions: number;
   focusSettings: FocusSettings;
+  focusStartTime: number | null; // ms timestamp for manual reset tracking
   startFocus: (taskId?: string, durationMinutes?: number) => void;
   pauseFocus: () => void;
   resetFocus: () => void;
@@ -420,6 +421,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
   focusTimeLeft: DEFAULT_FOCUS.workMinutes * 60,
   focusSessions: 0,
   focusSettings: loadJSON<FocusSettings>(LS.FOCUS_SETTINGS, DEFAULT_FOCUS),
+  focusStartTime: null,
 
   startFocus: (taskId?: string, durationMinutes?: number) => {
     const { focusState, focusSettings } = get();
@@ -437,6 +439,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
         focusState: 'working',
         focusTimeLeft: minutes * 60,
         currentFocusTaskId: taskId || null,
+        focusStartTime: Date.now(), // 记录开始时间用于手动结束时计算时长
       });
     } else if (taskId) {
       // 如果已经在专注中，只更新当前任务
@@ -453,18 +456,40 @@ export const useAppStore = create<AppState>()((set, get) => ({
     set({ focusState: 'idle', currentFocusTaskId: null });
   },
 
-  resetFocus: () => {
-    const { focusSettings } = get();
+  resetFocus: async () => {
+    const { focusSettings, focusState, focusStartTime, focusTimeLeft } = get();
     // 重置时停止后台专注检测
     const focusDetection = useFocusStore.getState();
     if (focusDetection.isDetecting) {
       focusDetection.stopDetection();
     }
+
+    // 如果正在工作中且达到最小时长阈值，记录会话
+    // 阈值：2分钟 = 120秒
+    // 理由：2分钟是一个有意义的最小专注时长，更短的通常是误操作或测试，不应该污染数据
+    // 用计时器追踪的实际时间作为判断依据，而不是墙上时钟时间
+    const elapsedSeconds = focusSettings.workMinutes * 60 - focusTimeLeft;
+    const MIN_FOCUS_THRESHOLD_SECONDS = 2 * 60;
+    if (focusState === 'working' && focusStartTime && elapsedSeconds >= MIN_FOCUS_THRESHOLD_SECONDS) {
+      const elapsedMinutes = Math.max(0, elapsedSeconds / 60);
+      const now = new Date();
+      const startTime = new Date(focusStartTime);
+      // completed: false 表示手动中断完成（区别于自然倒计时完成）
+      await dataService.createFocusSession({
+        startTime: startTime.toISOString(),
+        endTime: now.toISOString(),
+        duration: Math.max(1, Math.round(elapsedMinutes)),
+        type: 'work',
+        completed: false,
+      });
+    }
+
     set({
       focusState: 'idle',
       focusTimeLeft: focusSettings.workMinutes * 60,
       focusSessions: 0,
       currentFocusTaskId: null,
+      focusStartTime: null,
     });
   },
 
@@ -510,6 +535,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
           focusState: isLong ? 'longBreak' : 'break',
           focusTimeLeft: breakTime,
           focusSessions: newSessions,
+          focusStartTime: null, // 自然完成后清除开始时间
         });
         get().addToast('info', isLong ? '辛苦了！来一个长休息吧' : '休息一下！');
       } else {
@@ -683,9 +709,9 @@ export const useAppStore = create<AppState>()((set, get) => ({
   lastGoalAchievedDate: localStorage.getItem(LS.GUARDIAN_LAST_GOAL_ACHIEVED),
   tomorrowTopTaskId: localStorage.getItem(LS.GUARDIAN_TOMORROW_TOP),
   guardianSettings: loadJSON(LS.GUARDIAN_SETTINGS, {
-    morningRitualEnabled: true,
-    dailyReviewEnabled: true,
-    launchBoostEnabled: true,
+    morningRitualEnabled: false,
+    dailyReviewEnabled: false,
+    launchBoostEnabled: false,
   }),
 
   setIsFocusModeOpen: (open) => set({ isFocusModeOpen: open }),

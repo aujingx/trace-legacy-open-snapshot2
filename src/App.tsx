@@ -18,7 +18,7 @@ import FocusStatusIndicator from './components/FocusStatusIndicator';
 import FocusStartedModal from './components/FocusStartedModal';
 import FocusCompletedModal from './components/FocusCompletedModal';
 import DailyGoalAchievedModal from './components/DailyGoalAchievedModal';
-import DailyReview from './components/DailyReview';
+// DailyReview component is available for future manual trigger use, currently not auto-queued
 import { FocusModal } from './components/Focus';
 import type { FocusWindowMode } from './components/Focus';
 import { trackingService } from './services/trackingService';
@@ -79,13 +79,8 @@ function PageLoader() {
 // }
 
 /* ── Focus session popup orchestrator ── */
-import type { AppState, Activity } from './store/useAppStore';
-type ModalType = 'started' | 'completed' | 'goalAchieved' | 'dailyReview';
-
-function todayStr(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
+import type { AppState } from './store/useAppStore';
+type ModalType = 'started' | 'completed' | 'goalAchieved';
 
 function FocusPopupManager() {
   const focusState = useAppStore((s: AppState) => s.focusState);
@@ -93,10 +88,6 @@ function FocusPopupManager() {
   const focusSettings = useAppStore((s: AppState) => s.focusSettings);
   const activities = useAppStore((s: AppState) => s.activities);
   const dailyGoalMinutes = useAppStore((s: AppState) => s.dailyGoalMinutes);
-  const guardianSettings = useAppStore((s: AppState) => s.guardianSettings);
-  const lastDailyReviewDate = useAppStore((s: AppState) => s.lastDailyReviewDate);
-  const lastGoalAchievedDate = useAppStore((s: AppState) => s.lastGoalAchievedDate);
-  const setLastGoalAchievedDate = useAppStore((s: AppState) => s.setLastGoalAchievedDate);
   const { openFocusModal } = useFocusModal();
 
   // 🎯 Modal queue system - ensure only one modal shows at a time
@@ -149,41 +140,33 @@ function FocusPopupManager() {
   }, [focusState, focusSessions, focusSettings.workMinutes, addModalToQueue]);
 
   // Check daily goal achievement - only once per day
-  useEffect(() => {
-    const today = todayStr();
-    // 只有今天还没显示过，并且真正达成目标时才触发
-    if (lastGoalAchievedDate === today) return;
+  // 🚨 P0："今日目标达成"自动弹窗暂时禁用
+  // 所有自动触发的阻塞式弹窗应改为通知式或手动触发
+  // useEffect(() => {
+  //   const today = todayStr();
+  //   // 只有今天还没显示过，并且真正达成目标时才触发
+  //   if (lastGoalAchievedDate === today) return;
 
-    const todayMinutes = activities.reduce(
-      (sum: number, a: Activity) => sum + (a.duration || 0),
-      0
-    );
-    if (todayMinutes >= dailyGoalMinutes && dailyGoalMinutes > 0) {
-      setLastGoalAchievedDate(today);
-      // Wait for other modals to complete first
-      setTimeout(() => addModalToQueue('goalAchieved'), 2000);
-    }
-  }, [
-    activities,
-    dailyGoalMinutes,
-    lastGoalAchievedDate,
-    setLastGoalAchievedDate,
-    addModalToQueue,
-  ]);
+  //   const todayMinutes = activities.reduce(
+  //     (sum: number, a: Activity) => sum + (a.duration || 0),
+  //     0
+  //   );
+  //   if (todayMinutes >= dailyGoalMinutes && dailyGoalMinutes > 0) {
+  //     setLastGoalAchievedDate(today);
+  //     // Wait for other modals to complete first
+  //     setTimeout(() => addModalToQueue('goalAchieved'), 2000);
+  //   }
+  // }, [
+  //   activities,
+  //   dailyGoalMinutes,
+  //   lastGoalAchievedDate,
+  //   setLastGoalAchievedDate,
+  //   addModalToQueue,
+  // ]);
 
-  // Check Daily Review trigger: after 20:00, and not done today
-  const dailyReviewShown = useRef(false);
-  useEffect(() => {
-    if (dailyReviewShown.current) return;
-    const today = todayStr();
-    const currentHour = new Date().getHours();
-
-    if (guardianSettings.dailyReviewEnabled && currentHour >= 20 && lastDailyReviewDate !== today) {
-      dailyReviewShown.current = true;
-      // Wait longer to ensure it shows after achievement modals
-      setTimeout(() => addModalToQueue('dailyReview'), 5000);
-    }
-  }, [guardianSettings, lastDailyReviewDate, addModalToQueue]);
+  // Daily Review auto-modal temporarily disabled
+  // These should use notification-style triggers, not blocking entry modals
+  // The modal component is still available for manual user initiation in future
 
   return (
     <>
@@ -209,7 +192,7 @@ function FocusPopupManager() {
         totalMinutes={activities.reduce((sum, a) => sum + (a.duration || 0), 0)}
         goalMinutes={dailyGoalMinutes}
       />
-      <DailyReview isOpen={activeModal === 'dailyReview'} onComplete={closeCurrentModal} />
+      {/* DailyReview modal retained for future manual trigger, not auto-queued */}
     </>
   );
 }
@@ -218,7 +201,6 @@ function FocusPopupManager() {
 function AppContent() {
   const initialize = useAppStore((s: AppState) => s.initialize);
   const initialized = useAppStore((s: AppState) => s.initialized);
-  const isFirstLaunch = useAppStore((s: AppState) => s.isFirstLaunch);
   const theme = useAppStore((s: AppState) => s.theme);
   const backgroundSkin = useAppStore((s: AppState) => s.backgroundSkin);
   const location = useLocation();
@@ -251,15 +233,14 @@ function AppContent() {
   const isDark = theme === 'dark';
   const bgClass = backgroundSkinConfigs[backgroundSkin].getBgClass(isDark);
 
-  // Start AI tracking service when app initializes
+  // Sync frontend state with the always-on desktop tracker.
   useEffect(() => {
-    if (initialized && !isFirstLaunch) {
-      trackingService.start();
-      return () => {
-        trackingService.stop();
-      };
+    if (initialized) {
+      trackingService.syncTrackingStatus().catch((error) => {
+        console.error('Failed to sync tracking status:', error);
+      });
     }
-  }, [initialized, isFirstLaunch]);
+  }, [initialized]);
 
   // Apply dark class to document root for CSS variables
   useEffect(() => {
